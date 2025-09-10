@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Three.js</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="testCanvas"></canvas>
+    
+    <script src="./libs/three.min.js"></script>
+    <script>
+        console.log('🧪 Test iniciado');
+        
+        // Verificar que Three.js está cargado
+        if (typeof THREE === 'undefined') {
+            console.error('❌ Three.js no está cargado');
+            document.body.innerHTML = '<h1>Error: Three.js no encontrado</h1>';
+        } else {
+            console.log('✅ Three.js detectado, versión:', THREE.REVISION);
+        }
+        
+        // Crear escena básica
+        const canvas = document.getElementById('testCanvas');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0e1116);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Crear un cubo simple
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        
+        camera.position.z = 5;
+        
+        // Loop de animación
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        
+        console.log('🎮 Iniciando animación de prueba');
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
