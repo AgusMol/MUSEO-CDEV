@@ -1,0 +1,11 @@
+Model Information:
+* title:	Lámpara colgante de Techo
+* source:	https://sketchfab.com/3d-models/lampara-colgante-de-techo-5734c763753a412f9a689d1615871639
+* author:	franciscomedina77 (https://sketchfab.com/franciscomedina77)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Lámpara colgante de Techo" (https://sketchfab.com/3d-models/lampara-colgante-de-techo-5734c763753a412f9a689d1615871639) by franciscomedina77 (https://sketchfab.com/franciscomedina77) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

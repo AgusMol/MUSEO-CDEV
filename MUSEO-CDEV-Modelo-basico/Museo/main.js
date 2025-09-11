@@ -1,4 +1,6 @@
 // ======== Config básica ========
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 console.log('🚀 Iniciando museo virtual...');
 const CANVAS = document.getElementById("miCanvas");
 console.log('📺 Canvas encontrado:', CANVAS);
@@ -40,10 +42,25 @@ scene.add(spot.target);
 const ambient = new THREE.AmbientLight(0xffffff, 0.3);
 scene.add(ambient);
 
+// Agrupar luces principales para controlarlas
+const mainLights = [hemi, spot, ambient];
+let lucesPrendidas = true;
+
+function toggleLuces() {
+  lucesPrendidas = !lucesPrendidas;
+  mainLights.forEach(luz => luz.visible = lucesPrendidas);
+  // También apagar/prender las luces de las lámparas del techo
+  lamparasSpotLights.forEach(luz => luz.visible = lucesPrendidas);
+}
+
+// Array para guardar los SpotLight de las lámparas del techo
+const lamparasSpotLights = [];
+
 // ======== Sala del museo ========
 const ROOM = { w: 24, h: 6, d: 36 };
 const wallMat = new THREE.MeshStandardMaterial({ color: 0x161a22, roughness: 0.9, metalness: 0.0 });
 const floorMat = new THREE.MeshStandardMaterial({ color: 0x1f2836, roughness: 1.0 });
+
 
 const room = new THREE.Group();
 
@@ -54,10 +71,44 @@ floor.receiveShadow = true;
 room.add(floor);
 
 // Techo
-const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), wallMat);
-ceiling.rotation.x =  Math.PI / 2;
-ceiling.position.y = ROOM.h;
-room.add(ceiling);
+
+// ======== Lámparas colgantes en el techo (solo modelo, sin focos) ========
+const numRows = 3;
+const numCols = 5;
+const offsetY = ROOM.h - 0.4;
+const lamparaGLTF = './assets/models/lampara_colgante_de_techo/scene.gltf';
+const gltfLoaderLampara = new GLTFLoader();
+
+for (let row = 0; row < numRows; row++) {
+  const z = -ROOM.d/2 + (ROOM.d/(numRows+1)) * (row+1);
+  for (let col = 0; col < numCols; col++) {
+    const x = -ROOM.w/2 + (ROOM.w/(numCols+1)) * (col+1);
+    gltfLoaderLampara.load(
+      lamparaGLTF,
+      function(gltf) {
+        const lampara = gltf.scene.clone();
+        lampara.position.set(x, offsetY - 1, z);
+        lampara.scale.set(1, 1, 1);
+        lampara.traverse(obj => { if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; }});
+        scene.add(lampara);
+
+        // Luz tipo SpotLight apuntando hacia el piso
+        const luzLampara = new THREE.SpotLight(0xffffff, 2.5, 12, Math.PI/6, 0.2, 0.8);
+        luzLampara.position.set(x, offsetY - 0.2, z);
+        luzLampara.target.position.set(x, .5, z);
+        luzLampara.castShadow = false;
+        scene.add(luzLampara);
+        scene.add(luzLampara.target);
+        lamparasSpotLights.push(luzLampara);
+      },
+      undefined,
+      function(error) {
+        console.error('❌ Error cargando lámpara:', error);
+      }
+    );
+  }
+}
+
 
 // Paredes
 function wall(w, h, d) {
@@ -252,7 +303,7 @@ const objetoGroup = new THREE.Group();
 
 // Pedestal interno
 const pedestalInterno = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.2, 0.2, 0.15, 32),
+  new THREE.CylinderGeometry(0.20, 0.20, 0.15, 32),
   new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.4, roughness: 0.6 })
 );
 pedestalInterno.position.y = 0.075;
@@ -317,6 +368,9 @@ function cargarModeloJabulani() {
   
   const modeloJabulani = new THREE.Mesh(jabulaniGeometry, jabulaniMaterial);
   modeloJabulani.position.y = 0.3;
+  // Ajustar la rotación para que el texto quede derecho
+  modeloJabulani.rotation.y = 0; // Sin rotación Y
+  modeloJabulani.rotation.z = -Math.PI / 2; // Rotar 90° en Z
   modeloJabulani.castShadow = true;
   modeloJabulani.receiveShadow = true;
   objetoGroup.add(modeloJabulani);
@@ -450,261 +504,22 @@ pedestalTrofeo.receiveShadow = true;
 trofeo2Group.add(pedestalTrofeo);
 
 // Cargar el modelo GLTF del trofeo
-const gltfLoader2 = new THREE.GLTFLoader();
+const gltfLoader2 = new GLTFLoader();
 let trofeoModel = null;
 
 console.log('🏆 Iniciando carga del trofeo GLTF...');
 gltfLoader2.load(
   './assets/models/world_cup_trophy/scene.gltf',
   function (gltf) {
-    console.log('✅ GLTF del trofeo cargado exitosamente:', gltf);
-    trofeoModel = gltf.scene;
-    
-    // Configurar el modelo y aplicar texturas desde la carpeta de texturas
-    trofeoModel.traverse(function (child) {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        
-        // Configurar materiales para el trofeo dorado
-        if (child.material) {
-          // Clonar material para evitar conflictos
-          child.material = child.material.clone();
-          
-          // Configurar como material PBR dorado brillante
-          child.material.metalness = 0.95;
-          child.material.roughness = 0.05;
-          child.material.color.setHex(0xffd700); // Dorado base
-          
-          // Crear loader de texturas
-          const textureLoader = new THREE.TextureLoader();
-          
-          // Determinar qué conjunto de texturas usar basado en el nombre del material o mesh
-          const meshName = child.name ? child.name.toLowerCase() : '';
-          const materialName = child.material.name ? child.material.name.toLowerCase() : '';
-          
-          let texturePrefix = 'body'; // Por defecto usar texturas del cuerpo
-          if (meshName.includes('globe') || materialName.includes('globe') || 
-              meshName.includes('earth') || materialName.includes('earth')) {
-            texturePrefix = 'globe';
-          }
-          
-          // Cargar textura base (color)
-          textureLoader.load(
-            `./assets/models/world_cup_trophy/textures/${texturePrefix}_baseColor.png`,
-            function(texture) {
-              texture.flipY = false;
-              texture.colorSpace = THREE.SRGBColorSpace;
-              texture.wrapS = THREE.RepeatWrapping;
-              texture.wrapT = THREE.RepeatWrapping;
-              child.material.map = texture;
-              child.material.needsUpdate = true;
-              console.log(`✅ Textura base ${texturePrefix} aplicada`);
-            },
-            undefined,
-            function(error) {
-              console.log(`⚠️ No se pudo cargar textura base ${texturePrefix}`);
-            }
-          );
-          
-          // Cargar textura metallic/roughness
-          textureLoader.load(
-            `./assets/models/world_cup_trophy/textures/${texturePrefix}_metallicRoughness.png`,
-            function(texture) {
-              texture.flipY = false;
-              texture.wrapS = THREE.RepeatWrapping;
-              texture.wrapT = THREE.RepeatWrapping;
-              child.material.metalnessMap = texture;
-              child.material.roughnessMap = texture;
-              child.material.needsUpdate = true;
-              console.log(`✅ Textura metallic/roughness ${texturePrefix} aplicada`);
-            },
-            undefined,
-            function(error) {
-              console.log(`⚠️ No se pudo cargar textura metallic/roughness ${texturePrefix}`);
-            }
-          );
-          
-          // Cargar normal map
-          textureLoader.load(
-            `./assets/models/world_cup_trophy/textures/${texturePrefix}_normal.png`,
-            function(texture) {
-              texture.flipY = false;
-              texture.wrapS = THREE.RepeatWrapping;
-              texture.wrapT = THREE.RepeatWrapping;
-              child.material.normalMap = texture;
-              child.material.normalScale = new THREE.Vector2(1, 1);
-              child.material.needsUpdate = true;
-              console.log(`✅ Normal map ${texturePrefix} aplicado`);
-            },
-            undefined,
-            function(error) {
-              console.log(`⚠️ No se pudo cargar normal map ${texturePrefix}`);
-            }
-          );
-          
-          // Asegurar que se actualice
-          child.material.needsUpdate = true;
-        }
-      }
-    });
-    
-    // Escalar y posicionar el trofeo dentro de la vitrina
-    const box = new THREE.Box3().setFromObject(trofeoModel);
-    const size = box.getSize(new THREE.Vector3());
-    const maxDimension = Math.max(size.x, size.y, size.z);
-    const scale = 0.3 / maxDimension; // Escala más grande para que se vea mejor
-    
-    trofeoModel.scale.setScalar(scale);
-    trofeoModel.position.set(0, 0.35, 0); // Elevado más para que se vea mejor
-    
-    trofeo2Group.add(trofeoModel);
-    console.log('✅ Trofeo de la Copa del Mundo cargado con texturas');
+  trofeoModel = gltf.scene;
+  trofeoModel.scale.set(0.0008, 0.0008, 0.0008); // Ajuste de escala para que la copa entre en la vitrina
+  trofeoModel.position.set(0, 0.1605, 0); // Subir la copa para que quede sobre el pedestal
+  trofeo2Group.add(trofeoModel);
+  console.log('🏆 Trofeo cargado y posicionado');
   },
-  function (progress) {
-    console.log('📥 Cargando trofeo:', Math.round(progress.loaded / progress.total * 100) + '%');
-  },
+  undefined,
   function (error) {
-    console.error('❌ ERROR CRÍTICO cargando trofeo GLTF:', error);
-    console.error('❌ Ruta del archivo:', './assets/models/world_cup_trophy/scene.gltf');
-    console.error('❌ Usando fallback en su lugar');
-    
-    // Fallback: crear un trofeo dorado realista con forma de Copa del Mundo
-    const trofeoFallback = new THREE.Group();
-    
-    // Cargar texturas para el fallback
-    const textureLoader = new THREE.TextureLoader();
-    let bodyTexture = null;
-    let globeTexture = null;
-    
-    // Cargar textura del cuerpo
-    textureLoader.load('./assets/models/world_cup_trophy/textures/body_baseColor.png', function(texture) {
-      texture.flipY = false;
-      texture.colorSpace = THREE.SRGBColorSpace;
-      bodyTexture = texture;
-      updateTrophyMaterials();
-    });
-    
-    // Cargar textura del globo
-    textureLoader.load('./assets/models/world_cup_trophy/textures/globe_baseColor.png', function(texture) {
-      texture.flipY = false;
-      texture.colorSpace = THREE.SRGBColorSpace;
-      globeTexture = texture;
-      updateTrophyMaterials();
-    });
-    
-    // Base verde del trofeo (como la real)
-    const baseVerde = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.09, 0.09, 0.03, 32),
-      new THREE.MeshStandardMaterial({ 
-        color: 0x2d5016, // Verde FIFA
-        metalness: 0.3, 
-        roughness: 0.7 
-      })
-    );
-    baseVerde.position.y = 0.165;
-    trofeoFallback.add(baseVerde);
-    
-    // Base dorada del trofeo
-    const baseDorada = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08, 0.08, 0.04, 32),
-      new THREE.MeshStandardMaterial({ 
-        color: 0xffd700, 
-        metalness: 0.95, 
-        roughness: 0.05 
-      })
-    );
-    baseDorada.position.y = 0.19;
-    trofeoFallback.add(baseDorada);
-    
-    // Parte inferior del cuerpo (más ancha)
-    const cuerpoInferior = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.065, 0.075, 0.08, 32),
-      new THREE.MeshStandardMaterial({ 
-        color: 0xffd700, 
-        metalness: 0.95, 
-        roughness: 0.05 
-      })
-    );
-    cuerpoInferior.position.y = 0.25;
-    trofeoFallback.add(cuerpoInferior);
-    
-    // Parte media del cuerpo (con curvas características)
-    const cuerpoMedio = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.05, 0.065, 0.12, 32),
-      new THREE.MeshStandardMaterial({ 
-        color: 0xffd700, 
-        metalness: 0.95, 
-        roughness: 0.05 
-      })
-    );
-    cuerpoMedio.position.y = 0.35;
-    trofeoFallback.add(cuerpoMedio);
-    
-    // Parte superior del cuerpo (más estrecha)
-    const cuerpoSuperior = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.045, 0.05, 0.08, 32),
-      new THREE.MeshStandardMaterial({ 
-        color: 0xffd700, 
-        metalness: 0.95, 
-        roughness: 0.05 
-      })
-    );
-    cuerpoSuperior.position.y = 0.43;
-    trofeoFallback.add(cuerpoSuperior);
-    
-    // Transición al globo
-    const transicion = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06, 0.045, 0.03, 32),
-      new THREE.MeshStandardMaterial({ 
-        color: 0xffd700, 
-        metalness: 0.95, 
-        roughness: 0.05 
-      })
-    );
-    transicion.position.y = 0.485;
-    trofeoFallback.add(transicion);
-    
-    // Globo terrestre superior
-    const globo = new THREE.Mesh(
-      new THREE.SphereGeometry(0.075, 32, 24),
-      new THREE.MeshStandardMaterial({ 
-        color: 0xffd700, 
-        metalness: 0.95, 
-        roughness: 0.05 
-      })
-    );
-    globo.position.y = 0.56;
-    trofeoFallback.add(globo);
-    
-    // Función para actualizar materiales cuando las texturas se cargan
-    function updateTrophyMaterials() {
-      if (bodyTexture) {
-        // Aplicar textura del cuerpo a todas las partes doradas excepto el globo
-        [baseDorada, cuerpoInferior, cuerpoMedio, cuerpoSuperior, transicion].forEach(part => {
-          part.material.map = bodyTexture;
-          part.material.needsUpdate = true;
-        });
-      }
-      
-      if (globeTexture) {
-        // Aplicar textura del globo a la esfera superior
-        globo.material.map = globeTexture;
-        globo.material.needsUpdate = true;
-      }
-    }
-    
-    trofeoFallback.position.y = 0.25; // Elevado más para que se vea mejor
-    trofeoFallback.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    
-    trofeo2Group.add(trofeoFallback);
-    trofeoModel = trofeoFallback;
-    console.log('⚠️ Usando trofeo fallback dorado');
+    console.error('❌ Error cargando el trofeo:', error);
   }
 );
 
@@ -737,7 +552,7 @@ vitrina2Group.add(luzAmbientalTrofeo);
 
 // Sistema de colisiones para ambas vitrinas
 function checkVitrinaCollision(newPos) {
-  const playerRadius = 0.5;
+  const playerRadius = 0.15; // antes 0.5
   
   // Vitrina 1 (Jabulani)
   const vitrina1Pos = vitrinaGroup.position;
@@ -800,7 +615,14 @@ document.addEventListener('keydown', (e)=>{
   if (e.code==='Space') move.up = true;
   if (e.code==='ShiftLeft') move.run = true;
   if (e.code==='KeyE') tryOpenInfo();
-  if (e.code==='KeyC') animarCortinas();
+  if (e.code==='KeyC') {
+    // Solo permitir si la cámara mira al interruptor
+    if (isInterruptorFocused()) {
+      toggleLuces();
+      animarInterruptor();
+    }
+  }
+  if (e.code === 'KeyQ') crouching = true;
 });
 document.addEventListener('keyup', (e)=>{
   if (e.code==='KeyW') move.f = false;
@@ -809,6 +631,7 @@ document.addEventListener('keyup', (e)=>{
   if (e.code==='KeyD') move.r = false;
   if (e.code==='Space') move.up = false;
   if (e.code==='ShiftLeft') move.run = false;
+  if (e.code === 'KeyQ') crouching = false;
 });
 
 // Movimiento
@@ -816,6 +639,11 @@ const GRAVITY = 18, JUMP = 5;
 let onFloor = true;
 let vy = 0;
 
+let crouching = false;
+const STAND_HEIGHT = 1.6;
+const CROUCH_HEIGHT = 1.0;
+
+// Modificar la altura de la cámara en movePlayer
 function movePlayer(dt){
   direction.set(0,0,0);
   const speed = (move.run ? 6 : 3.2);
@@ -843,7 +671,12 @@ function movePlayer(dt){
   if (move.up && onFloor){ vy = JUMP; onFloor=false; }
   vy -= GRAVITY * dt;
   camera.position.y += vy * dt;
-  if (camera.position.y <= 1.6){ camera.position.y = 1.6; vy = 0; onFloor = true; }
+  let targetHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
+  if (camera.position.y <= targetHeight){
+    camera.position.y = targetHeight;
+    vy = 0;
+    onFloor = true;
+  }
 
   // Colisiones con paredes
   const margin = 0.6;
@@ -889,6 +722,36 @@ function showInfo(title, desc){
 }
 
 // ======== Loop ========
+// ======== Interruptor de luz (modelo y animación) ========
+const gltfLoaderSwitch = new GLTFLoader();
+let interruptor = null;
+let interruptorOn = true;
+
+// Cargar el modelo y ubicarlo en la pared derecha cerca de la entrada
+gltfLoaderSwitch.load(
+  './assets/models/light_switch/scene.gltf',
+  function(gltf) {
+  interruptor = gltf.scene;
+  // En la pared del frente, centrado y a una altura cómoda
+  interruptor.position.set(ROOM.w/2 - 0.15, 1.5, ROOM.d/2 - 2);
+  interruptor.scale.set(3, 3, 3);
+  // Rotar para que quede plano contra la pared del frente
+  interruptor.rotation.y = Math.PI;
+  interruptor.rotation.z = 0;
+  scene.add(interruptor);
+  },
+  undefined,
+  function(error) {
+    console.error('❌ Error cargando el interruptor:', error);
+  }
+);
+
+// Animación simple: mover el interruptor levemente
+function animarInterruptor() {
+  if (!interruptor) return;
+  interruptorOn = !interruptorOn;
+  // Ya no se rota el modelo ni la palanca
+}
 let last = performance.now();
 function animate(now){
   requestAnimationFrame(animate);
@@ -941,3 +804,16 @@ window.addEventListener('resize', ()=>{
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Detectar si la cámara está mirando al interruptor (raycast al modelo)
+function isInterruptorFocused() {
+  if (!interruptor) return false;
+  raycaster.setFromCamera({x:0, y:0}, camera);
+  const hits = raycaster.intersectObject(interruptor, true);
+  return hits.length > 0;
+}
+
+
+
+
+
