@@ -1,0 +1,11 @@
+Model Information:
+* title:	Copa libertadores 2021
+* source:	https://sketchfab.com/3d-models/copa-libertadores-2021-86364bb90136400d9a707142b6395436
+* author:	mbodeant43 (https://sketchfab.com/mbodeant43)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Copa libertadores 2021" (https://sketchfab.com/3d-models/copa-libertadores-2021-86364bb90136400d9a707142b6395436) by mbodeant43 (https://sketchfab.com/mbodeant43) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

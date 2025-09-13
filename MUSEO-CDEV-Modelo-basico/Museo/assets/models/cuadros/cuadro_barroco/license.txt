@@ -1,0 +1,11 @@
+Model Information:
+* title:	Cuadro Barroco 1
+* source:	https://sketchfab.com/3d-models/cuadro-barroco-1-30eb87ff09014d6c805974968ab93c13
+* author:	ferchomv19 (https://sketchfab.com/ferchomv19)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Cuadro Barroco 1" (https://sketchfab.com/3d-models/cuadro-barroco-1-30eb87ff09014d6c805974968ab93c13) by ferchomv19 (https://sketchfab.com/ferchomv19) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

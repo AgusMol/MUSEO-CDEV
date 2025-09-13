@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Museo Virtual</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="hud">
+    <div id="help">
+      <h1>Museo Virtual</h1>
+      <p>Click para entrar</p>
+      <p>WASD: moverse · Mouse: mirar · Shift: correr · Espacio: saltito · E: info de obra · C: apagar/encender luces</p>
+      <small>Esc para salir del modo cursor</small>
+    </div>
+    <div id="label"></div>
+    <div id="art-info" class="hidden">
+      <button id="close-info" title="Cerrar">×</button>
+      <h2 id="art-title"></h2>
+      <p id="art-desc"></p>
+    </div>
+  </div>
+
+  <canvas id="miCanvas"></canvas>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
