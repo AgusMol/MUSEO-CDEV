@@ -1,8 +1,0 @@
-Model Information:
-* title:	Cortina Lados Cabare
-* source:	https://sketchfab.com/3d-models/cortina-lados-cabare-36e229a9fe254a598195393ac17b202d
-* author:	samirhsilva (https://sketchfab.com/samirhsilva)
-
-Model License:
-* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
-* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works
