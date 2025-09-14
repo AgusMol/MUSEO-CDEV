@@ -57,7 +57,7 @@ function toggleLuces() {
 const lamparasSpotLights = [];
 
 // ====== Sala del museo ======
-const ROOM = { w: 24, h: 6, d: 36 };
+const ROOM = { w: 24, h: 10, d: 36 }; // Aumentada altura de 6 a 10 metros para acomodar el segundo piso
 const wallMat = new THREE.MeshStandardMaterial({ color: 0x5A6B3A, roughness: 0.8, metalness: 0.0 }); // Color oliva más oscuro y elegante
 const floorMat = new THREE.MeshStandardMaterial({ color: 0x1f2836, roughness: 1.0 });
 
@@ -430,6 +430,297 @@ room.add(wallBack, wallFront, wallLeft, wallRight);
 
 scene.add(room);
 
+// ======== Escalera Central y Segunda Planta ========
+console.log('🏗️ Creando escalera central y segunda planta...');
+
+// Material para la escalera (mármol)
+const stairMaterial = new THREE.MeshStandardMaterial({
+  color: 0xE8E8E8,
+  roughness: 0.2,
+  metalness: 0.1
+});
+
+// Material para el balcón (madera oscura elegante)
+const balconyMaterial = new THREE.MeshStandardMaterial({
+  color: 0x3C2B1F,
+  roughness: 0.6,
+  metalness: 0.1
+});
+
+// Material para barandillas (metal dorado)
+const railingMaterial = new THREE.MeshStandardMaterial({
+  color: 0xB8860B,
+  roughness: 0.3,
+  metalness: 0.8
+});
+
+// Grupo para toda la estructura de segundo piso
+const secondFloorGroup = new THREE.Group();
+
+// ======== Escalera Central ========
+const stairGroup = new THREE.Group();
+
+// Dimensiones de la escalera (extendida para conectar con el balcón)
+const stairWidth = 3;
+const stepHeight = 0.2;
+const stepDepth = 0.3;
+const totalSteps = 23; // Aumentado de 15 a 23 para llegar a la altura del balcón (4.6m)
+const stairLength = totalSteps * stepDepth;
+
+// Crear escalones principales (centrales) - Conecta directamente al borde interior (barandilla marrón)
+const stairOffset = -ROOM.d/2 + (5.0 - 0.025) + stairLength/2; // Posicionar para que termine en el borde interior del balcón trasero
+for (let i = 0; i < totalSteps; i++) {
+  const stepGeometry = new THREE.BoxGeometry(stairWidth, stepHeight, stepDepth);
+  const step = new THREE.Mesh(stepGeometry, stairMaterial);
+  
+  step.position.set(
+    0,
+    i * stepHeight + stepHeight/2,
+    stairOffset + stairLength/2 - i * stepDepth - stepDepth/2
+  );
+  
+  step.castShadow = true;
+  step.receiveShadow = true;
+  stairGroup.add(step);
+}
+
+// Altura final de la escalera
+const secondFloorHeight = totalSteps * stepHeight;
+
+// Variables globales para escaleras laterales y plataforma
+const sideStairSteps = 0; 
+const sideStairWidth = 2;
+const platformSize = 4;
+const platformThickness = 0.15;
+const balconyWidth = 5.0; // Ancho del balcón perimetral
+const balconyThickness = 0.1;
+const finalBalconyHeight = secondFloorHeight; // Ahora el balcón está a la misma altura que la escalera principal
+
+// La escalera ahora conecta directamente con el balcón trasero
+const leftStairGroup = new THREE.Group(); 
+const rightStairGroup = new THREE.Group();
+
+// ====== Balcón Perimetral Rediseñado ======
+const balconyGroup = new THREE.Group();
+
+// Balcón frontal completo (de pared a pared)
+const frontBalconyGeometry = new THREE.BoxGeometry(ROOM.w, balconyThickness, balconyWidth);
+const frontBalcony = new THREE.Mesh(frontBalconyGeometry, balconyMaterial);
+frontBalcony.position.set(0, finalBalconyHeight, ROOM.d/2 - balconyWidth/2);
+frontBalcony.castShadow = true;
+frontBalcony.receiveShadow = true;
+balconyGroup.add(frontBalcony);
+
+// Balcón trasero completo (de pared a pared)
+const backBalcony = new THREE.Mesh(frontBalconyGeometry, balconyMaterial);
+backBalcony.position.set(0, finalBalconyHeight, -ROOM.d/2 + balconyWidth/2);
+backBalcony.castShadow = true;
+backBalcony.receiveShadow = true;
+balconyGroup.add(backBalcony);
+
+// Balcón izquierdo (conecta con frontales, sin superposición)
+const leftBalconyGeometry = new THREE.BoxGeometry(balconyWidth, balconyThickness, ROOM.d - balconyWidth*2);
+const leftBalcony = new THREE.Mesh(leftBalconyGeometry, balconyMaterial);
+leftBalcony.position.set(-ROOM.w/2 + balconyWidth/2, finalBalconyHeight, 0);
+leftBalcony.castShadow = true;
+leftBalcony.receiveShadow = true;
+balconyGroup.add(leftBalcony);
+
+// Balcón derecho (conecta con frontales, sin superposición)
+const rightBalcony = new THREE.Mesh(leftBalconyGeometry, balconyMaterial);
+rightBalcony.position.set(ROOM.w/2 - balconyWidth/2, finalBalconyHeight, 0);
+rightBalcony.castShadow = true;
+rightBalcony.receiveShadow = true;
+balconyGroup.add(rightBalcony);
+
+// ======== Barandillas del Balcón ========
+const railingHeight = 1.2;
+const railingThickness = 0.05;
+
+// Función para crear barandilla
+function createRailing(width, depth, x, y, z) {
+  const railingGroup = new THREE.Group();
+  
+  // Barandilla superior
+  const topRailGeometry = new THREE.BoxGeometry(width, railingThickness, depth);
+  const topRail = new THREE.Mesh(topRailGeometry, railingMaterial);
+  topRail.position.set(0, railingHeight - railingThickness/2, 0);
+  railingGroup.add(topRail);
+  
+  // Barandilla inferior
+  const bottomRail = new THREE.Mesh(topRailGeometry, railingMaterial);
+  bottomRail.position.set(0, railingThickness/2, 0);
+  railingGroup.add(bottomRail);
+  
+  // Postes verticales
+  const numPosts = Math.floor(Math.max(width, depth) / 1.5) + 1;
+  for (let i = 0; i < numPosts; i++) {
+    const postGeometry = new THREE.BoxGeometry(railingThickness, railingHeight, railingThickness);
+    const post = new THREE.Mesh(postGeometry, railingMaterial);
+    
+    if (width > depth) {
+      post.position.set(-width/2 + (width/(numPosts-1)) * i, railingHeight/2, 0);
+    } else {
+      post.position.set(0, railingHeight/2, -depth/2 + (depth/(numPosts-1)) * i);
+    }
+    
+    railingGroup.add(post);
+  }
+  
+  railingGroup.position.set(x, y, z);
+  return railingGroup;
+}
+
+// Función para crear barandilla con hueco en el centro (para conexión de escalera)
+function createRailingWithGap(width, depth, gapWidth, x, y, z) {
+  const railingGroup = new THREE.Group();
+  
+  // Calcular dimensiones de las secciones laterales
+  const sideWidth = (width - gapWidth) / 2;
+  
+  if (sideWidth > 0) {
+    // Sección izquierda
+    const leftRailing = createRailing(sideWidth, depth, -gapWidth/2 - sideWidth/2, 0, 0);
+    railingGroup.add(leftRailing);
+    
+    // Sección derecha
+    const rightRailing = createRailing(sideWidth, depth, gapWidth/2 + sideWidth/2, 0, 0);
+    railingGroup.add(rightRailing);
+  }
+  
+  railingGroup.position.set(x, y, z);
+  return railingGroup;
+}
+
+// ======== Barandillas Mejoradas (Perímetro Exterior) ========
+// Barandilla frontal exterior (borde del museo)
+balconyGroup.add(createRailing(ROOM.w, railingThickness, 0, finalBalconyHeight + balconyThickness, ROOM.d/2 - railingThickness/2));
+
+// Barandilla trasera exterior (borde del museo) 
+balconyGroup.add(createRailing(ROOM.w, railingThickness, 0, finalBalconyHeight + balconyThickness, -ROOM.d/2 + railingThickness/2));
+
+// Barandilla izquierda exterior (borde del museo)
+balconyGroup.add(createRailing(railingThickness, ROOM.d - railingThickness*2, -ROOM.w/2 + railingThickness/2, finalBalconyHeight + balconyThickness, 0));
+
+// Barandilla derecha exterior (borde del museo)
+balconyGroup.add(createRailing(railingThickness, ROOM.d - railingThickness*2, ROOM.w/2 - railingThickness/2, finalBalconyHeight + balconyThickness, 0));
+
+// ======== Barandillas Interiores (Vista al centro del museo) ========
+// Ajustamos la posición interior para que estén en el borde interno del balcón
+const innerRailingOffset = balconyWidth - railingThickness/2;
+
+// Barandilla frontal interior
+balconyGroup.add(createRailing(ROOM.w - balconyWidth*2, railingThickness, 0, finalBalconyHeight + balconyThickness, ROOM.d/2 - innerRailingOffset));
+
+// Barandilla trasera interior (con hueco para la escalera)
+const stairGapWidth = 3; // Ancho del hueco para la escalera
+balconyGroup.add(createRailingWithGap(ROOM.w - balconyWidth*2, railingThickness, stairGapWidth, 0, finalBalconyHeight + balconyThickness, -ROOM.d/2 + innerRailingOffset));
+
+// Barandilla izquierda interior
+balconyGroup.add(createRailing(railingThickness, ROOM.d - balconyWidth*2, -ROOM.w/2 + innerRailingOffset, finalBalconyHeight + balconyThickness, 0));
+
+// Barandilla derecha interior
+balconyGroup.add(createRailing(railingThickness, ROOM.d - balconyWidth*2, ROOM.w/2 - innerRailingOffset, finalBalconyHeight + balconyThickness, 0));
+
+// ======== Conexión Directa Escalera-Balcón ========
+// La escalera ahora conecta directamente con el borde exterior del balcón trasero
+// (plataforma de conexión eliminada para mejor fluidez arquitectónica)
+
+// Agregar todo al grupo principal
+secondFloorGroup.add(stairGroup);
+secondFloorGroup.add(leftStairGroup);
+secondFloorGroup.add(rightStairGroup);
+secondFloorGroup.add(balconyGroup);
+
+// Agregar a la escena
+scene.add(secondFloorGroup);
+
+// ======== Iluminación Segunda Planta ========
+// Luz principal para la segunda planta
+const secondFloorMainLight = new THREE.SpotLight(0xffffff, 1.8, 50, Math.PI/4, 0.3, 1.2);
+secondFloorMainLight.position.set(0, finalBalconyHeight + 4, 0);
+secondFloorMainLight.target.position.set(0, finalBalconyHeight, 0);
+secondFloorMainLight.castShadow = true;
+scene.add(secondFloorMainLight);
+scene.add(secondFloorMainLight.target);
+
+// Luces ambientales para cada lado del balcón
+const balconyLights = [];
+
+// Luces para las escaleras laterales (giradas 180°)
+const leftStairZPos = -stairLength/2 - platformSize/2 + stepDepth;
+const rightStairZPos = -stairLength/2 - platformSize/2 + stepDepth;
+
+const leftStairLight = new THREE.SpotLight(0xffffff, 1.5, 15, Math.PI/6, 0.2, 0.8);
+leftStairLight.position.set(-platformSize/2 - sideStairSteps * stepDepth/2, finalBalconyHeight + 2.5, leftStairZPos);
+leftStairLight.target.position.set(-platformSize/2 - sideStairSteps * stepDepth/2, finalBalconyHeight, leftStairZPos);
+leftStairLight.castShadow = true;
+balconyLights.push(leftStairLight);
+
+const rightStairLight = new THREE.SpotLight(0xffffff, 1.5, 15, Math.PI/6, 0.2, 0.8);
+rightStairLight.position.set(platformSize/2 + sideStairSteps * stepDepth/2, finalBalconyHeight + 2.5, rightStairZPos);
+rightStairLight.target.position.set(platformSize/2 + sideStairSteps * stepDepth/2, finalBalconyHeight, rightStairZPos);
+rightStairLight.castShadow = true;
+balconyLights.push(rightStairLight);
+
+// Luz para el final de la escalera (conexión directa con balcón)
+const stairEndLight = new THREE.SpotLight(0xffffff, 2.0, 12, Math.PI/6, 0.2, 0.8);
+stairEndLight.position.set(0, secondFloorHeight + 3, stairOffset + stairLength/2 - stepDepth);
+stairEndLight.target.position.set(0, secondFloorHeight, stairOffset + stairLength/2 - stepDepth);
+stairEndLight.castShadow = true;
+balconyLights.push(stairEndLight);
+
+// ======== Luces Adicionales para el Segundo Piso (aprovechando la nueva altura) ========
+// Luces desde el techo que iluminan las plataformas de esquina
+const cornerPlatformLights = [];
+
+// Luz para plataforma esquina frontal-izquierda
+const frontLeftCornerLight = new THREE.SpotLight(0xffffff, 1.2, 12, Math.PI/4, 0.3, 0.5);
+frontLeftCornerLight.position.set(-ROOM.w/2 + balconyWidth/2, ROOM.h - 1, ROOM.d/2 - balconyWidth/2);
+frontLeftCornerLight.target.position.set(-ROOM.w/2 + balconyWidth/2, finalBalconyHeight, ROOM.d/2 - balconyWidth/2);
+frontLeftCornerLight.castShadow = true;
+cornerPlatformLights.push(frontLeftCornerLight);
+
+// Luz para plataforma esquina frontal-derecha
+const frontRightCornerLight = new THREE.SpotLight(0xffffff, 1.2, 12, Math.PI/4, 0.3, 0.5);
+frontRightCornerLight.position.set(ROOM.w/2 - balconyWidth/2, ROOM.h - 1, ROOM.d/2 - balconyWidth/2);
+frontRightCornerLight.target.position.set(ROOM.w/2 - balconyWidth/2, finalBalconyHeight, ROOM.d/2 - balconyWidth/2);
+frontRightCornerLight.castShadow = true;
+cornerPlatformLights.push(frontRightCornerLight);
+
+// Luz para plataforma esquina trasera-izquierda
+const backLeftCornerLight = new THREE.SpotLight(0xffffff, 1.2, 12, Math.PI/4, 0.3, 0.5);
+backLeftCornerLight.position.set(-ROOM.w/2 + balconyWidth/2, ROOM.h - 1, -ROOM.d/2 + balconyWidth/2);
+backLeftCornerLight.target.position.set(-ROOM.w/2 + balconyWidth/2, finalBalconyHeight, -ROOM.d/2 + balconyWidth/2);
+backLeftCornerLight.castShadow = true;
+cornerPlatformLights.push(backLeftCornerLight);
+
+// Luz para plataforma esquina trasera-derecha
+const backRightCornerLight = new THREE.SpotLight(0xffffff, 1.2, 12, Math.PI/4, 0.3, 0.5);
+backRightCornerLight.position.set(ROOM.w/2 - balconyWidth/2, ROOM.h - 1, -ROOM.d/2 + balconyWidth/2);
+backRightCornerLight.target.position.set(ROOM.w/2 - balconyWidth/2, finalBalconyHeight, -ROOM.d/2 + balconyWidth/2);
+backRightCornerLight.castShadow = true;
+cornerPlatformLights.push(backRightCornerLight);
+
+// Agregar las luces del balcón a la escena y al sistema de control
+balconyLights.forEach(light => {
+  scene.add(light);
+  scene.add(light.target);
+  lamparasSpotLights.push(light);
+});
+
+// Agregar las luces de las plataformas de esquina
+cornerPlatformLights.forEach(light => {
+  scene.add(light);
+  scene.add(light.target);
+  lamparasSpotLights.push(light);
+});
+
+// Agregar luz principal al sistema de control
+lamparasSpotLights.push(secondFloorMainLight);
+
+console.log('✅ Escalera central y balcón perimetral creados');
+
 // ======== Obras / marcos ========
 const interactables = [];
 const loader = new THREE.TextureLoader();
@@ -701,12 +992,6 @@ posicionesDerecha.forEach((z, index) => {
     desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
   });
 });
-
-// Pedestal central con "escultura"
-const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.6, 32), wallMat);
-pedestal.position.set(0, 0.3, 0);
-pedestal.receiveShadow = true;
-scene.add(pedestal);
 
 // ======== Vitrina de Vidrio 1========
 const vitrinaGroup = new THREE.Group();
@@ -1472,11 +1757,89 @@ function movePlayer(dt){
     camera.position.copy(newPosition);
   }
 
+  // ======== Sistema de Escaleras ========
+  // Función para calcular la altura del suelo en la posición actual
+  function getFloorHeight(x, z) {
+    // Altura base del suelo
+    let floorHeight = 0;
+    const playerCurrentY = camera.position.y;
+    const basePlayerHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
+    
+    // Verificar si está en la escalera central (reposicionada más atrás)
+    const stairCenterX = 0;
+    const stairStartZ = stairOffset + stairLength/2;   // Ajustado con el offset
+    const stairEndZ = stairOffset - stairLength/2;     // Ajustado con el offset
+    
+    if (Math.abs(x - stairCenterX) <= stairWidth/2 + 0.5 && z <= stairStartZ && z >= stairEndZ) {
+      // Calcular en qué escalón está (invertido)
+      const stepIndex = Math.floor((stairStartZ - z) / stepDepth);
+      if (stepIndex >= 0 && stepIndex < totalSteps) {
+        const stepHeight_calculated = stepIndex * stepHeight;
+        // Solo aplicar si el jugador está POR ENCIMA de una altura mínima (no caminando por debajo)
+        const minHeightToApply = stepHeight_calculated - 0.5; // 0.5m por debajo del escalón
+        if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
+          floorHeight = stepHeight_calculated;
+        }
+      }
+    }
+    
+    // Plataforma superior eliminada - la escalera ahora conecta directamente con el balcón
+    
+    // Las escaleras laterales ahora son plataformas horizontales (detectadas en la sección de plataformas laterales más abajo)
+    
+    // Verificar si está en el balcón perimetral rediseñado (sin huecos)
+    const balconyHeight = finalBalconyHeight;
+    const minHeightToApply = balconyHeight - 0.5; // 0.5m por debajo del balcón
+    
+    // Balcón frontal completo (de pared a pared)
+    if (Math.abs(x) <= ROOM.w/2 && 
+        z >= ROOM.d/2 - balconyWidth && z <= ROOM.d/2) {
+      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
+        floorHeight = balconyHeight;
+      }
+    }
+    
+    // Balcón trasero completo (de pared a pared)
+    if (Math.abs(x) <= ROOM.w/2 && 
+        z >= -ROOM.d/2 && z <= -ROOM.d/2 + balconyWidth) {
+      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
+        floorHeight = balconyHeight;
+      }
+    }
+    
+    // Balcón izquierdo (conecta sin superposición)
+    if (x >= -ROOM.w/2 && x <= -ROOM.w/2 + balconyWidth && 
+        Math.abs(z) <= (ROOM.d - balconyWidth*2)/2) {
+      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
+        floorHeight = balconyHeight;
+      }
+    }
+    
+    // Balcón derecho (conecta sin superposición)
+    if (x >= ROOM.w/2 - balconyWidth && x <= ROOM.w/2 && 
+        Math.abs(z) <= (ROOM.d - balconyWidth*2)/2) {
+      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
+        floorHeight = balconyHeight;
+      }
+    }
+    
+    // Conector eliminado - la escalera ahora conecta directamente con el balcón exterior
+    
+    // Las plataformas de esquina ya no son necesarias con el nuevo diseño continuo
+    
+    return floorHeight;
+  }
+  
+  // Calcular altura del suelo en la posición actual del jugador
+  const currentFloorHeight = getFloorHeight(camera.position.x, camera.position.z);
+  const basePlayerHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
+  const targetHeight = currentFloorHeight + basePlayerHeight;
+  
   // Salto
   if (move.up && onFloor){ vy = JUMP; onFloor=false; }
   vy -= GRAVITY * dt;
   camera.position.y += vy * dt;
-  let targetHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
+  
   if (camera.position.y <= targetHeight){
     camera.position.y = targetHeight;
     vy = 0;
