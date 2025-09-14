@@ -1462,6 +1462,58 @@ function checkVitrinaCollision(newPos) {
   return false;
 }
 
+// Sistema de colisiones para barandillas del segundo piso
+function checkRailingCollision(newPos) {
+  // Solo verificar colisiones si el jugador está en el segundo piso
+  if (newPos.y < finalBalconyHeight - 1) {
+    return false;
+  }
+  
+  const playerRadius = 0.15;
+  const innerRailingOffset = balconyWidth - railingThickness/2; // 5.0 - 0.05 = 4.95
+  
+  // Posiciones exactas de las barandas interiores según el código de creación
+  const frontInnerRailingZ = ROOM.d/2 - innerRailingOffset;    // 18 - 4.95 = 13.05
+  const backInnerRailingZ = -ROOM.d/2 + innerRailingOffset;    // -18 + 4.95 = -13.05
+  const leftInnerRailingX = -ROOM.w/2 + innerRailingOffset;    // -12 + 4.95 = -7.05
+  const rightInnerRailingX = ROOM.w/2 - innerRailingOffset;    // 12 - 4.95 = 7.05
+  
+  // Dimensiones de las barandas interiores según el código de creación
+  const innerRailingWidth = ROOM.w - balconyWidth*2;  // 24 - 10 = 14
+  const innerRailingDepth = ROOM.d - balconyWidth*2;  // 36 - 10 = 26
+  const stairGapWidth = 3;
+  
+  // Barandilla frontal interior: ancho 14, posición Z=13.05
+  if (Math.abs(newPos.x) <= innerRailingWidth/2) {
+    if (Math.abs(newPos.z - frontInnerRailingZ) < playerRadius) {
+      return true;
+    }
+  }
+  
+  // Barandilla trasera interior: ancho 14 con hueco de 3 para escalera, posición Z=-13.05
+  if (Math.abs(newPos.x) > stairGapWidth/2 && Math.abs(newPos.x) <= innerRailingWidth/2) {
+    if (Math.abs(newPos.z - backInnerRailingZ) < playerRadius) {
+      return true;
+    }
+  }
+  
+  // Barandilla izquierda interior: profundidad 26, posición X=-7.05
+  if (Math.abs(newPos.z) <= innerRailingDepth/2) {
+    if (Math.abs(newPos.x - leftInnerRailingX) < playerRadius) {
+      return true;
+    }
+  }
+  
+  // Barandilla derecha interior: profundidad 26, posición X=7.05
+  if (Math.abs(newPos.z) <= innerRailingDepth/2) {
+    if (Math.abs(newPos.x - rightInnerRailingX) < playerRadius) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 // ======== Controles ========
 const help = document.getElementById('help');
 const label = document.getElementById('label');
@@ -1626,8 +1678,8 @@ function movePlayer(dt){
   newPosition.addScaledVector(forward, direction.z * speed * dt);
   newPosition.addScaledVector(right,   direction.x * speed * dt);
 
-  // Verificar colisión con la vitrina
-  if (!checkVitrinaCollision(newPosition)) {
+  // Verificar colisión con la vitrina y las barandas
+  if (!checkVitrinaCollision(newPosition) && !checkRailingCollision(newPosition)) {
     camera.position.copy(newPosition);
   }
 
@@ -1719,6 +1771,8 @@ function movePlayer(dt){
     vy = 0;
     onFloor = true;
   }
+
+
 
   // Colisiones con paredes
   const margin = 0.6;
