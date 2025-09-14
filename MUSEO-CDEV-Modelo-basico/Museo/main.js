@@ -64,171 +64,27 @@ const floorMat = new THREE.MeshStandardMaterial({ color: 0x1f2836, roughness: 1.
 
 const room = new THREE.Group();
 
-// ======== Piso de Parquet Natural Realista ========
-console.log('🪵 Creando piso de parquet natural como la imagen de referencia...');
+// ======== Piso de Parquet Uniforme (igual al segundo piso) ========
+console.log('🪵 Creando piso de parquet uniforme...');
 
-// Crear canvas de alta resolución para textura de parquet natural
-const parquetCanvas = document.createElement('canvas');
-const parquetCtx = parquetCanvas.getContext('2d');
-parquetCanvas.width = 1024;
-parquetCanvas.height = 1024;
+// Cargar la misma textura que se usa en el segundo piso
+const floorTextureLoader = new THREE.TextureLoader();
+const floorParquetTexture = floorTextureLoader.load('./assets/textures/madera_parquet.jpg');
+floorParquetTexture.wrapS = THREE.RepeatWrapping;
+floorParquetTexture.wrapT = THREE.RepeatWrapping;
+floorParquetTexture.repeat.set(8, 6); // Escala apropiada para el piso grande
+floorParquetTexture.anisotropy = 16;
 
-// Colores de madera natural basados en la imagen de referencia
-const naturalWoodColors = [
-  '#D4B896', // Madera clara miel
-  '#C8A882', // Madera beige dorada
-  '#B8956C', // Madera media dorada
-  '#E0C4A0', // Madera muy clara
-  '#CDB188', // Madera natural
-  '#A68B5B', // Madera media oscura
-  '#F2E6D3', // Madera casi blanca
-  '#DBC7A8', // Madera crema
-  '#B5956A', // Madera canela
-  '#E8D8C0'  // Madera marfil
-];
-
-// Función para convertir hex a RGB
-function hexToRgb(hex) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
-}
-
-// Función para crear variaciones sutiles de color
-function createColorVariation(baseColor, variation = 0.1) {
-  const rgb = hexToRgb(baseColor);
-  const variance = Math.random() * variation - variation/2;
-  
-  const r = Math.max(0, Math.min(255, rgb.r + (rgb.r * variance)));
-  const g = Math.max(0, Math.min(255, rgb.g + (rgb.g * variance)));
-  const b = Math.max(0, Math.min(255, rgb.b + (rgb.b * variance)));
-  
-  return `rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`;
-}
-
-// Función para dibujar tabla de madera natural vertical
-function drawNaturalWoodPlank(x, y, width, height, colorIndex) {
-  const baseColor = naturalWoodColors[colorIndex % naturalWoodColors.length];
-  
-  // Color base con variación sutil
-  const plankColor = createColorVariation(baseColor, 0.08);
-  parquetCtx.fillStyle = plankColor;
-  parquetCtx.fillRect(x, y, width, height);
-  
-  // Vetas verticales de madera natural
-  parquetCtx.globalCompositeOperation = 'multiply';
-  const numVeins = Math.floor(width / 8) + 2;
-  
-  for (let i = 0; i < numVeins; i++) {
-    const veinX = x + (width / numVeins) * i + (Math.random() - 0.5) * 3;
-    const veinOpacity = 0.1 + Math.random() * 0.15;
-    
-    // Vetas principales verticales
-    parquetCtx.strokeStyle = `rgba(139, 111, 71, ${veinOpacity})`;
-    parquetCtx.lineWidth = 0.5 + Math.random() * 1;
-    
-    parquetCtx.beginPath();
-    parquetCtx.moveTo(veinX, y);
-    
-    // Crear vetas con variación natural
-    for (let j = 0; j < height; j += 4) {
-      const noise = (Math.random() - 0.5) * 2;
-      parquetCtx.lineTo(veinX + noise, y + j);
-    }
-    parquetCtx.lineTo(veinX, y + height);
-    parquetCtx.stroke();
-  }
-  
-  // Vetas horizontales muy sutiles para textura
-  parquetCtx.globalAlpha = 0.3;
-  for (let i = 0; i < 3; i++) {
-    const veinY = y + (height / 4) * (i + 1) + (Math.random() - 0.5) * 8;
-    parquetCtx.strokeStyle = `rgba(139, 111, 71, 0.08)`;
-    parquetCtx.lineWidth = 0.3;
-    
-    parquetCtx.beginPath();
-    parquetCtx.moveTo(x, veinY);
-    parquetCtx.lineTo(x + width, veinY);
-    parquetCtx.stroke();
-  }
-  
-  parquetCtx.globalCompositeOperation = 'source-over';
-  parquetCtx.globalAlpha = 1.0;
-  
-  // NO dibujar ningún borde - madera continua sin separaciones
-}
-
-// Crear patrón de tablones verticales como en la imagen de referencia
-const plankWidth = 64; // Ancho de cada tablón
-const plankHeight = 256; // Alto de cada tablón (vertical)
-let colorIndex = 0;
-
-// Patrón de tablones verticales paralelos (perfectamente conectados)
-for (let col = 0; col < parquetCanvas.width; col += plankWidth) {
-  for (let row = 0; row < parquetCanvas.height; row += plankHeight) {
-    // Altura fija para evitar huecos
-    const currentHeight = Math.min(plankHeight, parquetCanvas.height - row);
-    // Asegurar que los tablones se toquen perfectamente
-    const adjustedWidth = (col + plankWidth > parquetCanvas.width) ? parquetCanvas.width - col : plankWidth;
-    drawNaturalWoodPlank(col, row, adjustedWidth, currentHeight, colorIndex++);
-  }
-}
-
-// Crear textura desde el canvas
-const parquetTexture = new THREE.CanvasTexture(parquetCanvas);
-parquetTexture.wrapS = THREE.RepeatWrapping;
-parquetTexture.wrapT = THREE.RepeatWrapping;
-parquetTexture.repeat.set(6, 4); // Ajustado para tablones verticales
-parquetTexture.anisotropy = 16; // Mejor calidad a distancia
-
-// Crear mapa de rugosidad para madera natural
-const roughnessCanvas = document.createElement('canvas');
-const roughnessCtx = roughnessCanvas.getContext('2d');
-roughnessCanvas.width = 512;
-roughnessCanvas.height = 512;
-
-// Rugosidad completamente uniforme - sin variaciones que causen artefactos
-roughnessCtx.fillStyle = '#B0B0B0'; // Rugosidad uniforme suave para madera barnizada
-roughnessCtx.fillRect(0, 0, 512, 512);
-
-const roughnessTexture = new THREE.CanvasTexture(roughnessCanvas);
-roughnessTexture.wrapS = THREE.RepeatWrapping;
-roughnessTexture.wrapT = THREE.RepeatWrapping;
-roughnessTexture.repeat.set(6, 4);
-
-// Crear mapa de normales completamente plano (sin relieves que causen artefactos)
-const normalCanvas = document.createElement('canvas');
-const normalCtx = normalCanvas.getContext('2d');
-normalCanvas.width = 512;
-normalCanvas.height = 512;
-
-// Superficie completamente plana - sin variaciones que puedan causar líneas
-normalCtx.fillStyle = '#8080FF'; // Azul neutro = superficie perfectamente plana
-normalCtx.fillRect(0, 0, 512, 512);
-
-const normalTexture = new THREE.CanvasTexture(normalCanvas);
-normalTexture.wrapS = THREE.RepeatWrapping;
-normalTexture.wrapT = THREE.RepeatWrapping;
-normalTexture.repeat.set(6, 4);
-
-// Crear material del parquet natural realista (sin artefactos)
-const parquetMaterial = new THREE.MeshStandardMaterial({
-  map: parquetTexture,
-  normalMap: normalTexture,
-  roughnessMap: roughnessTexture,
-  roughness: 0.3, // Madera barnizada
-  metalness: 0.01, // Casi nada de metalness para madera
-  normalScale: new THREE.Vector2(0.1, 0.1), // Normales muy sutiles para evitar artefactos
-  side: THREE.FrontSide,
-  transparent: false
+// Material del piso (idéntico al del segundo piso)
+const floorMaterial = new THREE.MeshStandardMaterial({
+  map: floorParquetTexture,
+  roughness: 0.3,
+  metalness: 0.0
 });
 
-// Crear geometría del piso con subdivisiones apropiadas
-const parquetGeometry = new THREE.PlaneGeometry(ROOM.w, ROOM.d, 96, 64);
-const parquetFloor = new THREE.Mesh(parquetGeometry, parquetMaterial);
+// Crear geometría del piso
+const floorGeometry = new THREE.PlaneGeometry(ROOM.w, ROOM.d);
+const parquetFloor = new THREE.Mesh(floorGeometry, floorMaterial);
 
 // Posicionar el piso
 parquetFloor.rotation.x = -Math.PI / 2;
@@ -238,10 +94,7 @@ parquetFloor.castShadow = false;
 
 room.add(parquetFloor);
 
-console.log('✅ Piso de parquet natural realista creado');
-console.log('🎨 Textura procedural 1024x1024 con tablones verticales naturales');
-console.log('🌟 Colores y patrón basados en imagen de referencia');
-console.log('💡 Material optimizado para madera natural barnizada');
+console.log('✅ Piso de parquet uniforme creado (idéntico al segundo piso)');
 
 // ======== Techo de Paneles Cuadrados Blancos ========
 console.log('🏢 Creando techo de paneles cuadrados blancos...');
@@ -433,18 +286,39 @@ scene.add(room);
 // ======== Escalera Central y Segunda Planta ========
 console.log('🏗️ Creando escalera central y segunda planta...');
 
-// Material para la escalera (mármol)
-const stairMaterial = new THREE.MeshStandardMaterial({
-  color: 0xE8E8E8,
-  roughness: 0.2,
-  metalness: 0.1
+// Cargar textura de parquet para escalera y balcón
+const stairTextureLoader = new THREE.TextureLoader();
+const woodParquetTexture = stairTextureLoader.load('./assets/textures/madera_parquet.jpg');
+woodParquetTexture.wrapS = THREE.RepeatWrapping;
+woodParquetTexture.wrapT = THREE.RepeatWrapping;
+woodParquetTexture.repeat.set(3, 3);
+woodParquetTexture.anisotropy = 16;
+
+// Crear textura rotada para escalera y balcón frontal/trasero
+const woodParquetTextureRotated = woodParquetTexture.clone();
+woodParquetTextureRotated.rotation = Math.PI / 2; // Rotar 90 grados
+woodParquetTextureRotated.center.set(0.5, 0.5); // Centro de rotación
+woodParquetTextureRotated.needsUpdate = true;
+
+// Material para costados del balcón (orientación correcta)
+const balconyMaterial = new THREE.MeshStandardMaterial({
+  map: woodParquetTexture,
+  roughness: 0.3,
+  metalness: 0.0
 });
 
-// Material para el balcón (madera oscura elegante)
-const balconyMaterial = new THREE.MeshStandardMaterial({
-  color: 0x3C2B1F,
-  roughness: 0.6,
-  metalness: 0.1
+// Material para escalera y balcón frontal/trasero (textura rotada)
+const stairMaterial = new THREE.MeshStandardMaterial({
+  map: woodParquetTextureRotated,
+  roughness: 0.3,
+  metalness: 0.0
+});
+
+// Material específico para balcones frontales y traseros
+const frontBackBalconyMaterial = new THREE.MeshStandardMaterial({
+  map: woodParquetTextureRotated,
+  roughness: 0.3,
+  metalness: 0.0
 });
 
 // Material para barandillas (metal dorado)
@@ -503,16 +377,16 @@ const rightStairGroup = new THREE.Group();
 // ====== Balcón Perimetral Rediseñado ======
 const balconyGroup = new THREE.Group();
 
-// Balcón frontal completo (de pared a pared)
+// Balcón frontal completo (de pared a pared) - Con textura rotada
 const frontBalconyGeometry = new THREE.BoxGeometry(ROOM.w, balconyThickness, balconyWidth);
-const frontBalcony = new THREE.Mesh(frontBalconyGeometry, balconyMaterial);
+const frontBalcony = new THREE.Mesh(frontBalconyGeometry, frontBackBalconyMaterial);
 frontBalcony.position.set(0, finalBalconyHeight, ROOM.d/2 - balconyWidth/2);
 frontBalcony.castShadow = true;
 frontBalcony.receiveShadow = true;
 balconyGroup.add(frontBalcony);
 
-// Balcón trasero completo (de pared a pared)
-const backBalcony = new THREE.Mesh(frontBalconyGeometry, balconyMaterial);
+// Balcón trasero completo (de pared a pared) - Con textura rotada
+const backBalcony = new THREE.Mesh(frontBalconyGeometry, frontBackBalconyMaterial);
 backBalcony.position.set(0, finalBalconyHeight, -ROOM.d/2 + balconyWidth/2);
 backBalcony.castShadow = true;
 backBalcony.receiveShadow = true;
