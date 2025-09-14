@@ -56,21 +56,329 @@ function toggleLuces() {
 // Array para guardar los SpotLight de las lámparas del techo
 const lamparasSpotLights = [];
 
-// ======== Sala del museo ========
+// ====== Sala del museo ======
 const ROOM = { w: 24, h: 6, d: 36 };
-const wallMat = new THREE.MeshStandardMaterial({ color: 0x161a22, roughness: 0.9, metalness: 0.0 });
+const wallMat = new THREE.MeshStandardMaterial({ color: 0x5A6B3A, roughness: 0.8, metalness: 0.0 }); // Color oliva más oscuro y elegante
 const floorMat = new THREE.MeshStandardMaterial({ color: 0x1f2836, roughness: 1.0 });
 
 
 const room = new THREE.Group();
 
-// Piso
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), floorMat);
-floor.rotation.x = -Math.PI / 2;
-floor.receiveShadow = true;
-room.add(floor);
+// ======== Piso de Parquet Natural Realista ========
+console.log('🪵 Creando piso de parquet natural como la imagen de referencia...');
 
-// Techo
+// Crear canvas de alta resolución para textura de parquet natural
+const parquetCanvas = document.createElement('canvas');
+const parquetCtx = parquetCanvas.getContext('2d');
+parquetCanvas.width = 1024;
+parquetCanvas.height = 1024;
+
+// Colores de madera natural basados en la imagen de referencia
+const naturalWoodColors = [
+  '#D4B896', // Madera clara miel
+  '#C8A882', // Madera beige dorada
+  '#B8956C', // Madera media dorada
+  '#E0C4A0', // Madera muy clara
+  '#CDB188', // Madera natural
+  '#A68B5B', // Madera media oscura
+  '#F2E6D3', // Madera casi blanca
+  '#DBC7A8', // Madera crema
+  '#B5956A', // Madera canela
+  '#E8D8C0'  // Madera marfil
+];
+
+// Función para convertir hex a RGB
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+// Función para crear variaciones sutiles de color
+function createColorVariation(baseColor, variation = 0.1) {
+  const rgb = hexToRgb(baseColor);
+  const variance = Math.random() * variation - variation/2;
+  
+  const r = Math.max(0, Math.min(255, rgb.r + (rgb.r * variance)));
+  const g = Math.max(0, Math.min(255, rgb.g + (rgb.g * variance)));
+  const b = Math.max(0, Math.min(255, rgb.b + (rgb.b * variance)));
+  
+  return `rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`;
+}
+
+// Función para dibujar tabla de madera natural vertical
+function drawNaturalWoodPlank(x, y, width, height, colorIndex) {
+  const baseColor = naturalWoodColors[colorIndex % naturalWoodColors.length];
+  
+  // Color base con variación sutil
+  const plankColor = createColorVariation(baseColor, 0.08);
+  parquetCtx.fillStyle = plankColor;
+  parquetCtx.fillRect(x, y, width, height);
+  
+  // Vetas verticales de madera natural
+  parquetCtx.globalCompositeOperation = 'multiply';
+  const numVeins = Math.floor(width / 8) + 2;
+  
+  for (let i = 0; i < numVeins; i++) {
+    const veinX = x + (width / numVeins) * i + (Math.random() - 0.5) * 3;
+    const veinOpacity = 0.1 + Math.random() * 0.15;
+    
+    // Vetas principales verticales
+    parquetCtx.strokeStyle = `rgba(139, 111, 71, ${veinOpacity})`;
+    parquetCtx.lineWidth = 0.5 + Math.random() * 1;
+    
+    parquetCtx.beginPath();
+    parquetCtx.moveTo(veinX, y);
+    
+    // Crear vetas con variación natural
+    for (let j = 0; j < height; j += 4) {
+      const noise = (Math.random() - 0.5) * 2;
+      parquetCtx.lineTo(veinX + noise, y + j);
+    }
+    parquetCtx.lineTo(veinX, y + height);
+    parquetCtx.stroke();
+  }
+  
+  // Vetas horizontales muy sutiles para textura
+  parquetCtx.globalAlpha = 0.3;
+  for (let i = 0; i < 3; i++) {
+    const veinY = y + (height / 4) * (i + 1) + (Math.random() - 0.5) * 8;
+    parquetCtx.strokeStyle = `rgba(139, 111, 71, 0.08)`;
+    parquetCtx.lineWidth = 0.3;
+    
+    parquetCtx.beginPath();
+    parquetCtx.moveTo(x, veinY);
+    parquetCtx.lineTo(x + width, veinY);
+    parquetCtx.stroke();
+  }
+  
+  parquetCtx.globalCompositeOperation = 'source-over';
+  parquetCtx.globalAlpha = 1.0;
+  
+  // NO dibujar ningún borde - madera continua sin separaciones
+}
+
+// Crear patrón de tablones verticales como en la imagen de referencia
+const plankWidth = 64; // Ancho de cada tablón
+const plankHeight = 256; // Alto de cada tablón (vertical)
+let colorIndex = 0;
+
+// Patrón de tablones verticales paralelos (perfectamente conectados)
+for (let col = 0; col < parquetCanvas.width; col += plankWidth) {
+  for (let row = 0; row < parquetCanvas.height; row += plankHeight) {
+    // Altura fija para evitar huecos
+    const currentHeight = Math.min(plankHeight, parquetCanvas.height - row);
+    // Asegurar que los tablones se toquen perfectamente
+    const adjustedWidth = (col + plankWidth > parquetCanvas.width) ? parquetCanvas.width - col : plankWidth;
+    drawNaturalWoodPlank(col, row, adjustedWidth, currentHeight, colorIndex++);
+  }
+}
+
+// Crear textura desde el canvas
+const parquetTexture = new THREE.CanvasTexture(parquetCanvas);
+parquetTexture.wrapS = THREE.RepeatWrapping;
+parquetTexture.wrapT = THREE.RepeatWrapping;
+parquetTexture.repeat.set(6, 4); // Ajustado para tablones verticales
+parquetTexture.anisotropy = 16; // Mejor calidad a distancia
+
+// Crear mapa de rugosidad para madera natural
+const roughnessCanvas = document.createElement('canvas');
+const roughnessCtx = roughnessCanvas.getContext('2d');
+roughnessCanvas.width = 512;
+roughnessCanvas.height = 512;
+
+// Rugosidad completamente uniforme - sin variaciones que causen artefactos
+roughnessCtx.fillStyle = '#B0B0B0'; // Rugosidad uniforme suave para madera barnizada
+roughnessCtx.fillRect(0, 0, 512, 512);
+
+const roughnessTexture = new THREE.CanvasTexture(roughnessCanvas);
+roughnessTexture.wrapS = THREE.RepeatWrapping;
+roughnessTexture.wrapT = THREE.RepeatWrapping;
+roughnessTexture.repeat.set(6, 4);
+
+// Crear mapa de normales completamente plano (sin relieves que causen artefactos)
+const normalCanvas = document.createElement('canvas');
+const normalCtx = normalCanvas.getContext('2d');
+normalCanvas.width = 512;
+normalCanvas.height = 512;
+
+// Superficie completamente plana - sin variaciones que puedan causar líneas
+normalCtx.fillStyle = '#8080FF'; // Azul neutro = superficie perfectamente plana
+normalCtx.fillRect(0, 0, 512, 512);
+
+const normalTexture = new THREE.CanvasTexture(normalCanvas);
+normalTexture.wrapS = THREE.RepeatWrapping;
+normalTexture.wrapT = THREE.RepeatWrapping;
+normalTexture.repeat.set(6, 4);
+
+// Crear material del parquet natural realista (sin artefactos)
+const parquetMaterial = new THREE.MeshStandardMaterial({
+  map: parquetTexture,
+  normalMap: normalTexture,
+  roughnessMap: roughnessTexture,
+  roughness: 0.3, // Madera barnizada
+  metalness: 0.01, // Casi nada de metalness para madera
+  normalScale: new THREE.Vector2(0.1, 0.1), // Normales muy sutiles para evitar artefactos
+  side: THREE.FrontSide,
+  transparent: false
+});
+
+// Crear geometría del piso con subdivisiones apropiadas
+const parquetGeometry = new THREE.PlaneGeometry(ROOM.w, ROOM.d, 96, 64);
+const parquetFloor = new THREE.Mesh(parquetGeometry, parquetMaterial);
+
+// Posicionar el piso
+parquetFloor.rotation.x = -Math.PI / 2;
+parquetFloor.position.y = 0.01;
+parquetFloor.receiveShadow = true;
+parquetFloor.castShadow = false;
+
+room.add(parquetFloor);
+
+console.log('✅ Piso de parquet natural realista creado');
+console.log('🎨 Textura procedural 1024x1024 con tablones verticales naturales');
+console.log('🌟 Colores y patrón basados en imagen de referencia');
+console.log('💡 Material optimizado para madera natural barnizada');
+
+// ======== Techo de Paneles Cuadrados Blancos ========
+console.log('🏢 Creando techo de paneles cuadrados blancos...');
+
+// Material para los paneles del techo (blanco mate)
+const ceilingPanelMaterial = new THREE.MeshStandardMaterial({
+  color: 0xf8f8f8, // Blanco ligeramente cálido
+  roughness: 0.8,  // Mate, sin brillo
+  metalness: 0.0   // No metálico
+});
+
+// Material para la estructura del techo (gris oscuro)
+const ceilingFrameMaterial = new THREE.MeshStandardMaterial({
+  color: 0x404040, // Gris oscuro para los marcos
+  roughness: 0.6,
+  metalness: 0.2
+});
+
+// Crear grupo para el techo completo
+const ceilingGroup = new THREE.Group();
+
+// Dimensiones de cada panel cuadrado
+const panelSize = 1.2;  // Tamaño de cada panel cuadrado
+const frameThickness = 0.05; // Grosor del marco entre paneles
+const ceilingHeight = ROOM.h - 0.1; // Altura del techo
+
+// Calcular número de paneles que caben en cada dirección
+const panelsX = Math.floor(ROOM.w / panelSize);
+const panelsZ = Math.floor(ROOM.d / panelSize);
+
+// Crear paneles cuadrados con profundidad (como cajas empotradas)
+const panelDepth = 0.15; // Profundidad de cada caja/hueco
+
+for (let x = 0; x < panelsX; x++) {
+  for (let z = 0; z < panelsZ; z++) {
+    // Posición de cada panel
+    const posX = (x - panelsX/2) * panelSize + panelSize/2;
+    const posZ = (z - panelsZ/2) * panelSize + panelSize/2;
+    
+    // Crear grupo para cada caja empotrada
+    const panelBox = new THREE.Group();
+    
+    // Fondo de la caja (panel principal)
+    const bottomGeometry = new THREE.BoxGeometry(
+      panelSize - frameThickness, 
+      0.02, 
+      panelSize - frameThickness
+    );
+    const bottomPanel = new THREE.Mesh(bottomGeometry, ceilingPanelMaterial);
+    bottomPanel.position.set(0, -panelDepth/2, 0);
+    bottomPanel.receiveShadow = true;
+    bottomPanel.castShadow = false;
+    panelBox.add(bottomPanel);
+    
+    // Paredes laterales de la caja (4 lados)
+    const wallThickness = 0.02;
+    
+    // Pared frontal
+    const frontWallGeometry = new THREE.BoxGeometry(
+      panelSize - frameThickness, 
+      panelDepth, 
+      wallThickness
+    );
+    const frontWall = new THREE.Mesh(frontWallGeometry, ceilingPanelMaterial);
+    frontWall.position.set(0, -panelDepth/2, (panelSize - frameThickness)/2 - wallThickness/2);
+    frontWall.receiveShadow = true;
+    frontWall.castShadow = true;
+    panelBox.add(frontWall);
+    
+    // Pared trasera
+    const backWall = new THREE.Mesh(frontWallGeometry, ceilingPanelMaterial);
+    backWall.position.set(0, -panelDepth/2, -(panelSize - frameThickness)/2 + wallThickness/2);
+    backWall.receiveShadow = true;
+    backWall.castShadow = true;
+    panelBox.add(backWall);
+    
+    // Pared izquierda
+    const sideWallGeometry = new THREE.BoxGeometry(
+      wallThickness, 
+      panelDepth, 
+      panelSize - frameThickness - wallThickness*2
+    );
+    const leftWall = new THREE.Mesh(sideWallGeometry, ceilingPanelMaterial);
+    leftWall.position.set(-(panelSize - frameThickness)/2 + wallThickness/2, -panelDepth/2, 0);
+    leftWall.receiveShadow = true;
+    leftWall.castShadow = true;
+    panelBox.add(leftWall);
+    
+    // Pared derecha
+    const rightWall = new THREE.Mesh(sideWallGeometry, ceilingPanelMaterial);
+    rightWall.position.set((panelSize - frameThickness)/2 - wallThickness/2, -panelDepth/2, 0);
+    rightWall.receiveShadow = true;
+    rightWall.castShadow = true;
+    panelBox.add(rightWall);
+    
+    // Posicionar la caja completa
+    panelBox.position.set(posX, ceilingHeight, posZ);
+    ceilingGroup.add(panelBox);
+  }
+}
+
+// Crear estructura de marcos (líneas que separan los paneles)
+// Marcos horizontales
+for (let x = 0; x <= panelsX; x++) {
+  const posX = (x - panelsX/2) * panelSize;
+  const frameGeometry = new THREE.BoxGeometry(
+    frameThickness, 
+    0.12, 
+    ROOM.d
+  );
+  const frame = new THREE.Mesh(frameGeometry, ceilingFrameMaterial);
+  frame.position.set(posX, ceilingHeight + 0.02, 0);
+  frame.receiveShadow = true;
+  frame.castShadow = true;
+  
+  ceilingGroup.add(frame);
+}
+
+// Marcos verticales
+for (let z = 0; z <= panelsZ; z++) {
+  const posZ = (z - panelsZ/2) * panelSize;
+  const frameGeometry = new THREE.BoxGeometry(
+    ROOM.w, 
+    0.12, 
+    frameThickness
+  );
+  const frame = new THREE.Mesh(frameGeometry, ceilingFrameMaterial);
+  frame.position.set(0, ceilingHeight + 0.02, posZ);
+  frame.receiveShadow = true;
+  frame.castShadow = true;
+  
+  ceilingGroup.add(frame);
+}
+
+// Agregar el techo completo a la sala
+room.add(ceilingGroup);
+
 
 // ======== Lámparas colgantes en el techo (solo modelo, sin focos) ========
 const numRows = 3;
@@ -129,7 +437,7 @@ const loader = new THREE.TextureLoader();
 function addFrame(opts) {
   const {
     x, z, face = "front",
-    img = "./assets/textures/Pelota.jpg",
+    img = "./assets/textures/colonCampeon.jpg",
     title = "Obra sin título",
     desc = "Descripción de ejemplo"
   } = opts;
@@ -187,23 +495,212 @@ function addFrame(opts) {
   );
 }
 
-// Carga algunas obras
-const imgs = [
-  "./assets/images/EL DIIIIIEGO.jpg",
-  "./assets/images/cafeteras.jpg",
-  "./assets/images/obra3.jpg",
-  "./assets/images/obra4.jpg",
-  "./assets/textures/Pelota.jpg"
+// ======== Función para crear placas doradas informativas ========
+function createGoldenPlaque(title, description) {
+  const plaqueGroup = new THREE.Group();
+  
+  // Material dorado para la placa
+  const goldenMaterial = new THREE.MeshStandardMaterial({
+    color: 0xFFD700, // Oro brillante
+    metalness: 0.8,
+    roughness: 0.2,
+    emissive: 0x332200, // Ligero brillo dorado
+    emissiveIntensity: 0.15,
+    side: THREE.DoubleSide // Visible desde ambos lados
+  });
+  
+  // Base de la placa (más grande y visible)
+  const plaqueGeometry = new THREE.BoxGeometry(0.5, 0.12, 0.02);
+  const plaque = new THREE.Mesh(plaqueGeometry, goldenMaterial);
+  plaque.castShadow = true;
+  plaque.receiveShadow = true;
+  
+  // Crear texto en canvas para la placa
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  canvas.width = 800;
+  canvas.height = 160;
+  
+  // Fondo dorado brillante
+  context.fillStyle = '#FFD700';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Borde oscuro elegante
+  context.strokeStyle = '#8B4513';
+  context.lineWidth = 6;
+  context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+  
+  // Segundo borde interior
+  context.strokeStyle = '#B8860B';
+  context.lineWidth = 2;
+  context.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+  
+  // Texto negro elegante y muy visible
+  context.fillStyle = '#1a1a1a'; // Negro oscuro para máximo contraste
+  context.font = 'bold 36px "Times New Roman"'; // Fuente serif elegante y grande
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  
+  const x = canvas.width / 2;
+  const y = canvas.height / 2;
+  
+  // Sombra para profundidad
+  context.save();
+  context.shadowColor = 'rgba(0,0,0,0.5)';
+  context.shadowOffsetX = 2;
+  context.shadowOffsetY = 2;
+  context.shadowBlur = 3;
+  context.fillText(title, x, y);
+  context.restore();
+  
+  // Borde dorado del texto para elegancia
+  context.strokeStyle = '#B8860B';
+  context.lineWidth = 2;
+  context.strokeText(title, x, y);
+  
+  // Texto principal por encima
+  context.fillStyle = '#000000';
+  context.fillText(title, x, y);
+  
+  console.log(`✨ Texto generado en canvas: "${title}" (${canvas.width}x${canvas.height})`);
+  
+  // Crear textura del canvas con configuración optimizada
+  const textTexture = new THREE.CanvasTexture(canvas);
+  textTexture.minFilter = THREE.LinearFilter;
+  textTexture.magFilter = THREE.LinearFilter;
+  textTexture.generateMipmaps = false;
+  textTexture.flipY = false;
+  textTexture.needsUpdate = true;
+  
+  // Material para el texto con máxima visibilidad
+  const textMaterial = new THREE.MeshBasicMaterial({
+    map: textTexture,
+    transparent: false,
+    alphaTest: 0.1,
+    side: THREE.DoubleSide,
+    depthWrite: true,
+    depthTest: true
+  });
+  
+  // Plano para el texto (ajustado a la placa más grande)
+  const textGeometry = new THREE.PlaneGeometry(0.48, 0.10);
+  const textPlane = new THREE.Mesh(textGeometry, textMaterial);
+  textPlane.position.z = -0.012; // Un poco más separado de la placa
+  textPlane.castShadow = false;
+  textPlane.receiveShadow = false;
+  
+  // Agregar todo al grupo
+  plaqueGroup.add(plaque);
+  plaqueGroup.add(textPlane);
+  
+  // Agregar userData para la interacción
+  plaqueGroup.userData = { title: title, desc: description };
+  
+  console.log(`🏷️ Placa dorada creada: "${title}"`);
+  return plaqueGroup;
+}
+
+// ======== Catálogo de Obras Específicas ========
+const obrasCatalogo = [
+  {
+    img: "./assets/images/EL DIIIIIEGO.jpg",
+    title: "El Eterno Capitán",
+    author: "Roberto Martínez",
+    year: "2020",
+    desc: "Retrato icónico del legendario Diego Armando Maradona, capturando su esencia como líder y símbolo del fútbol argentino. La obra refleja la pasión y el carisma que lo convirtieron en una figura universal del deporte."
+  },
+  {
+    img: "./assets/images/cafeteras.jpg",
+    title: "Naturaleza Muerta con Cafeteras",
+    author: "Elena Vásquez",
+    year: "2019",
+    desc: "Una composición elegante que explora la relación entre los objetos cotidianos y la luz. Las cafeteras, dispuestas con precisión geométrica, crean un diálogo entre la funcionalidad y la belleza estética."
+  },
+  {
+    img: "./assets/images/obra3.jpg",
+    title: "Composición Abstracta III",
+    author: "Carlos Mendoza",
+    year: "2021",
+    desc: "Exploración de formas y colores que trasciende la representación figurativa. Esta obra invita al espectador a una experiencia puramente visual, donde la armonía cromática genera emociones profundas."
+  },
+  {
+    img: "./assets/images/obra4.jpg",
+    title: "Reflexiones Urbanas",
+    author: "Ana Morales",
+    year: "2022",
+    desc: "Una mirada contemporánea sobre la vida en la ciudad moderna. Los contrastes de luz y sombra representan las dualidades de la experiencia urbana: soledad y conexión, progreso y nostalgia."
+  },
+  {
+    img: "./assets/textures/colonCampeon.jpg",
+    title: "Colón Campeón - Copa de la Liga 2021",
+    author: "Matías Nicolás Espósito",
+    year: "2021",
+    desc: "COLÓN CAMPEÓN ⭐ EL RESTO LO AGREGAN USTEDES"
+  }
 ];
 
-for (let i = -8; i <= 8; i += 4) {
-  addFrame({ x: i, z: -ROOM.d/2 + 0.18, face: "back",  img: imgs[(i+8)/4 % imgs.length], title: `Obra pared fondo ${i}`,  desc: "Autor A · 2024" });
-  addFrame({ x: i, z:  ROOM.d/2 - 0.18, face: "front", img: imgs[(i+10)/4 % imgs.length], title: `Obra pared frente ${i}`, desc: "Autor B · 2023" });
+// Función auxiliar para obtener obra por índice
+function getObra(index) {
+  return obrasCatalogo[index % obrasCatalogo.length];
 }
-for (let i = -8; i <= 8; i += 4) {
-  addFrame({ x: -ROOM.w/2 + 0.18, z: i, face: "left",  img: imgs[(i+12)/4 % imgs.length], title: `Obra pared izq ${i}`,  desc: "Autor C · 2022" });
-  addFrame({ x:  ROOM.w/2 - 0.18, z: i, face: "right", img: imgs[(i+14)/4 % imgs.length], title: `Obra pared der ${i}`, desc: "Autor D · 2021" });
-}
+
+// ======== Distribución de Obras por Paredes ========
+
+// Pared del fondo (back) - 5 obras
+const posicionesFondo = [-8, -4, 0, 4, 8];
+posicionesFondo.forEach((x, index) => {
+  const obra = getObra(index);
+  addFrame({ 
+    x: x, 
+    z: -ROOM.d/2 + 0.18, 
+    face: "back",  
+    img: obra.img, 
+    title: obra.title,  
+    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
+  });
+});
+
+// Pared del frente (front) - 5 obras
+const posicionesFrente = [-8, -4, 0, 4, 8];
+posicionesFrente.forEach((x, index) => {
+  const obra = getObra(index + 5); // Siguiente grupo de obras
+  addFrame({ 
+    x: x, 
+    z: ROOM.d/2 - 0.18, 
+    face: "front", 
+    img: obra.img, 
+    title: obra.title, 
+    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
+  });
+});
+
+// Pared izquierda (left) - 5 obras
+const posicionesIzquierda = [-8, -4, 0, 4, 8];
+posicionesIzquierda.forEach((z, index) => {
+  const obra = getObra(index + 10); // Siguiente grupo de obras
+  addFrame({ 
+    x: -ROOM.w/2 + 0.18, 
+    z: z, 
+    face: "left",  
+    img: obra.img, 
+    title: obra.title,  
+    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
+  });
+});
+
+// Pared derecha (right) - 5 obras
+const posicionesDerecha = [-8, -4, 0, 4, 8];
+posicionesDerecha.forEach((z, index) => {
+  const obra = getObra(index + 15); // Siguiente grupo de obras
+  addFrame({ 
+    x: ROOM.w/2 - 0.18, 
+    z: z, 
+    face: "right", 
+    img: obra.img, 
+    title: obra.title, 
+    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
+  });
+});
 
 // Pedestal central con "escultura"
 const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.6, 32), wallMat);
@@ -410,6 +907,20 @@ luzObjeto.castShadow = true;
 vitrinaGroup.add(luzObjeto);
 vitrinaGroup.add(luzObjeto.target);
 
+// ======== Placa informativa de la Vitrina 1 ========
+const placa1 = createGoldenPlaque(
+  "JABULANI 2010",
+  "Balón oficial utilizado en la Copa Mundial de la FIFA Sudáfrica 2010. El Jabulani, diseñado por Adidas, fue el primer balón esférico completamente redondo gracias a su innovadora tecnología de 8 paneles termoformados. Su nombre significa 'celebrar' en idioma zulú, representando el espíritu festivo del continente africano. Este ejemplar forma parte de la colección de objetos históricos del fútbol mundial."
+);
+placa1.position.set(0.37, 0.9, 0); // Pegada al lado del pedestal
+placa1.rotation.x = 0; // Plana contra la pared
+placa1.rotation.y = -Math.PI / 2; // Girada 90° a la derecha
+placa1.rotation.z = Math.PI; // Girada 180° sobre su propio eje
+vitrinaGroup.add(placa1);
+
+// Agregar placa a interactables
+interactables.push(placa1);
+
 // Posicionar la vitrina en el museo
 vitrinaGroup.position.set(-6, 0, 6);
 vitrinaGroup.castShadow = true;
@@ -503,6 +1014,20 @@ const marcoSuperior2 = new THREE.Mesh(
 marcoSuperior2.position.set(0, vitrina2BaseY + 0.65 + 0.03/2, 0);
 vitrina2Group.add(marcoSuperior2);
 
+// ======== Placa informativa de la Vitrina 2 ========
+const placa2 = createGoldenPlaque(
+  "COPA MUNDIAL FIFA",
+  "Réplica oficial del trofeo más codiciado del fútbol mundial. La Copa del Mundo FIFA, también conocida como el Trofeo Jules Rimet hasta 1970, representa la máxima distinción en el fútbol internacional. Diseñado por el artista italiano Silvio Gazzaniga en 1974, está hecho de oro macizo de 18 quilates y pesa 6.142 kg. En su base circular se graban los nombres de los países campeones, siendo Brasil el único pentacampeón mundial."
+);
+placa2.position.set(0.37, 0.9, 0); // Pegada al lado del pedestal
+placa2.rotation.x = 0; // Plana contra la pared
+placa2.rotation.y = -Math.PI / 2; // Girada 90° a la derecha
+placa2.rotation.z = Math.PI; // Girada 180° sobre su propio eje
+vitrina2Group.add(placa2);
+
+// Agregar placa a interactables
+interactables.push(placa2);
+
 // Posicionar la segunda vitrina en el museo
 vitrina2Group.position.set(-6, 0, 3);
 vitrina2Group.castShadow = true;
@@ -571,7 +1096,7 @@ vitrina2Group.add(luzLateral2);
 const luzAmbientalTrofeo = new THREE.AmbientLight(0xffffff, 0.4);
 vitrina2Group.add(luzAmbientalTrofeo);
 
-// ======== Vitrina Central - Copa Libertadores 2021 ========
+// ====== Copa Libertadores ======
 const vitrina3Group = new THREE.Group();
 
 // Base elegante del pedestal (mismo estilo que las otras vitrinas)
@@ -610,36 +1135,37 @@ vitrina3Group.add(vitrina3Top);
 
 // Estructura de vidrio para la tercera vitrina
 const vitrina3BaseY = vitrina3Height + 0.15 + 0.08;
+const vitrina3GlassHeight = 0.95; // Altura aumentada para mejor visualización de la Copa Libertadores
 
 // Vidrio frontal
 const vitrina3Frontal = new THREE.Mesh(
-  new THREE.BoxGeometry(0.65, 0.65, 0.02),
+  new THREE.BoxGeometry(0.65, vitrina3GlassHeight, 0.02),
   vidriaMaterial
 );
-vitrina3Frontal.position.set(0, vitrina3BaseY + 0.65/2, 0.65/2);
+vitrina3Frontal.position.set(0, vitrina3BaseY + vitrina3GlassHeight/2, 0.65/2);
 vitrina3Group.add(vitrina3Frontal);
 
 // Vidrio trasero
 const vitrina3Trasera = new THREE.Mesh(
-  new THREE.BoxGeometry(0.65, 0.65, 0.02),
+  new THREE.BoxGeometry(0.65, vitrina3GlassHeight, 0.02),
   vidriaMaterial
 );
-vitrina3Trasera.position.set(0, vitrina3BaseY + 0.65/2, -0.65/2);
+vitrina3Trasera.position.set(0, vitrina3BaseY + vitrina3GlassHeight/2, -0.65/2);
 vitrina3Group.add(vitrina3Trasera);
 
 // Vidrios laterales
 const vitrina3Izquierda = new THREE.Mesh(
-  new THREE.BoxGeometry(0.02, 0.65, 0.65),
+  new THREE.BoxGeometry(0.02, vitrina3GlassHeight, 0.65),
   vidriaMaterial
 );
-vitrina3Izquierda.position.set(-0.65/2, vitrina3BaseY + 0.65/2, 0);
+vitrina3Izquierda.position.set(-0.65/2, vitrina3BaseY + vitrina3GlassHeight/2, 0);
 vitrina3Group.add(vitrina3Izquierda);
 
 const vitrina3Derecha = new THREE.Mesh(
-  new THREE.BoxGeometry(0.02, 0.65, 0.65),
+  new THREE.BoxGeometry(0.02, vitrina3GlassHeight, 0.65),
   vidriaMaterial
 );
-vitrina3Derecha.position.set(0.65/2, vitrina3BaseY + 0.65/2, 0);
+vitrina3Derecha.position.set(0.65/2, vitrina3BaseY + vitrina3GlassHeight/2, 0);
 vitrina3Group.add(vitrina3Derecha);
 
 // Techo de vidrio
@@ -647,7 +1173,7 @@ const vitrina3Techo = new THREE.Mesh(
   new THREE.BoxGeometry(0.65, 0.02, 0.65),
   vidriaMaterial
 );
-vitrina3Techo.position.set(0, vitrina3BaseY + 0.65, 0);
+vitrina3Techo.position.set(0, vitrina3BaseY + vitrina3GlassHeight, 0);
 vitrina3Group.add(vitrina3Techo);
 
 // Marco superior
@@ -655,15 +1181,28 @@ const marcoSuperior3 = new THREE.Mesh(
   new THREE.BoxGeometry(0.65 + 0.03*2, 0.03, 0.65 + 0.03*2),
   marcoMaterial
 );
-marcoSuperior3.position.set(0, vitrina3BaseY + 0.65 + 0.03/2, 0);
+marcoSuperior3.position.set(0, vitrina3BaseY + vitrina3GlassHeight + 0.03/2, 0);
 vitrina3Group.add(marcoSuperior3);
 
+// ======== Placa informativa de la Vitrina 3 ========
+const placa3 = createGoldenPlaque(
+  "COPA LIBERTADORES 2021",
+  "Trofeo de la Copa CONMEBOL Libertadores, el torneo de clubes más prestigioso de Sudamérica. Esta competencia, que comenzó en 1960 como Copa de Campeones de América, reúne a los mejores equipos del continente. El trofeo actual, diseñado por la casa de orfebrería argentina Casa Escasany, está hecho de plata con baños de oro y pesa aproximadamente 9 kg. La Copa Libertadores representa la gloria máxima del fútbol de clubes sudamericano y clasifica al campeón para la Copa Mundial de Clubes FIFA."
+);
+placa3.position.set(0.37, 0.9, 0); // Pegada al lado del pedestal
+placa3.rotation.x = 0; // Plana contra la pared
+placa3.rotation.y = -Math.PI / 2; // Girada 90° a la derecha
+placa3.rotation.z = Math.PI; // Girada 180° sobre su propio eje
+vitrina3Group.add(placa3);
+
+// Agregar placa a interactables
+interactables.push(placa3);
+
 // Posicionar la tercera vitrina en el centro del museo
-vitrina3Group.position.set(0, 0, 0);
+vitrina3Group.position.set(-6, 0, 0); // ubicación vitrina
 vitrina3Group.castShadow = true;
 vitrina3Group.receiveShadow = true;
 scene.add(vitrina3Group);
-console.log('✅ Tercera vitrina (central) agregada a la escena');
 
 // ======== Copa Libertadores 2021 (GLTF) ========
 const copaLibertadores3Group = new THREE.Group();
@@ -702,22 +1241,22 @@ gltfLoader3.load(
 copaLibertadores3Group.position.set(0, vitrina3BaseY, 0);
 vitrina3Group.add(copaLibertadores3Group);
 
-// Luz desde arriba para la Copa Libertadores (intensa y dorada)
-const luzCopaLibertadores = new THREE.SpotLight(0xffffff, 6.0, 8, Math.PI / 3, 0.1, 1);
-luzCopaLibertadores.position.set(0, vitrina3BaseY + 0.65 + 1.5, 0);
+// Luz desde arriba para la Copa Libertadores (intensa y dorada) - Ajustada para vitrina más alta
+const luzCopaLibertadores = new THREE.SpotLight(0xffffff, 6.0, 10, Math.PI / 3, 0.1, 1);
+luzCopaLibertadores.position.set(0, vitrina3BaseY + vitrina3GlassHeight + 1.5, 0);
 luzCopaLibertadores.target.position.set(0, vitrina3BaseY + 0.2, 0);
 luzCopaLibertadores.castShadow = true;
 vitrina3Group.add(luzCopaLibertadores);
 vitrina3Group.add(luzCopaLibertadores.target);
 
-// Luz adicional lateral para resaltar el brillo de la Copa Libertadores
-let luzLateralCopa = new THREE.PointLight(0xffffff, 2.5, 3);
-luzLateralCopa.position.set(0.3, vitrina3BaseY + 0.4, 0.3);
+// Luz adicional lateral para resaltar el brillo de la Copa Libertadores - Ajustada para vitrina más alta
+let luzLateralCopa = new THREE.PointLight(0xffffff, 2.5, 4);
+luzLateralCopa.position.set(0.3, vitrina3BaseY + vitrina3GlassHeight * 0.6, 0.3);
 vitrina3Group.add(luzLateralCopa);
 
-// Segunda luz lateral desde el otro lado
-let luzLateralCopa2 = new THREE.PointLight(0xffffff, 2.0, 3);
-luzLateralCopa2.position.set(-0.3, vitrina3BaseY + 0.4, -0.3);
+// Segunda luz lateral desde el otro lado - Ajustada para vitrina más alta
+let luzLateralCopa2 = new THREE.PointLight(0xffffff, 2.0, 4);
+luzLateralCopa2.position.set(-0.3, vitrina3BaseY + vitrina3GlassHeight * 0.6, -0.3);
 vitrina3Group.add(luzLateralCopa2);
 
 // Luz ambiental adicional solo para la vitrina de la Copa Libertadores
@@ -767,7 +1306,53 @@ function checkVitrinaCollision(newPos) {
 // ======== Controles ========
 const help = document.getElementById('help');
 const label = document.getElementById('label');
+const crosshair = document.getElementById('crosshair');
+const hotbar = document.getElementById('hotbar');
 let pointerLocked = false;
+
+// ======== Sistema de Hotbar ========
+let currentSlot = 5; // Slot activo (1-9)
+const hotbarSlots = document.querySelectorAll('.hotbar-slot');
+
+function updateHotbar() {
+  hotbarSlots.forEach((slot, index) => {
+    slot.classList.toggle('active', index + 1 === currentSlot);
+  });
+}
+
+function setHotbarSlot(slotNumber) {
+  if (slotNumber >= 1 && slotNumber <= 9) {
+    currentSlot = slotNumber;
+    updateHotbar();
+    console.log(`🎒 Slot ${slotNumber} seleccionado`);
+  }
+}
+function initializeHotbar() {
+  // Íconos de los ítems (pueden ser emojis o caracteres especiales)
+  const items = {
+    1: '',
+    2: '', 
+    3: '', 
+    4: '', 
+    5: '', 
+    6: '', 
+    7: '', 
+    8: '', 
+    9: '' 
+  };
+
+  hotbarSlots.forEach((slot, index) => {
+    const slotItem = slot.querySelector('.slot-item');
+    const itemIcon = items[index + 1];
+    if (itemIcon) {
+      slotItem.innerHTML = itemIcon;
+      slotItem.style.fontSize = '16px';
+    }
+  });
+  
+  updateHotbar();
+  console.log('🎒 Hotbar inicializada con ítems');
+}
 
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
@@ -780,6 +1365,17 @@ function lockPointer(){
 document.addEventListener('pointerlockchange', () => {
   pointerLocked = (document.pointerLockElement === CANVAS);
   help.style.display = pointerLocked ? 'none' : 'block';
+  crosshair.style.display = pointerLocked ? 'block' : 'none';
+  hotbar.style.display = pointerLocked ? 'block' : 'none';
+  
+  // Ocultar label cuando no estés en modo juego
+  if (!pointerLocked) {
+    label.classList.remove('show');
+  }
+  
+  if (pointerLocked) {
+    updateHotbar();
+  }
 });
 CANVAS.addEventListener('click', lockPointer);
 
@@ -800,15 +1396,23 @@ document.addEventListener('keydown', (e)=>{
   if (e.code==='KeyD') move.r = true;
   if (e.code==='Space') move.up = true;
   if (e.code==='ShiftLeft') move.run = true;
-  if (e.code==='KeyE') tryOpenInfo();
-  if (e.code==='KeyC') {
-    // Solo permitir si la cámara mira al interruptor
+  if (e.code==='KeyE') {
+    // Primero verificar si está mirando al interruptor
     if (isInterruptorFocused()) {
       toggleLuces();
       animarInterruptor();
+    } else {
+      // Si no está mirando al interruptor, intentar abrir info de obra
+      tryOpenInfo();
     }
   }
   if (e.code === 'KeyQ') crouching = true;
+  
+  // Hotbar: teclas numéricas 1-9
+  if (e.code >= 'Digit1' && e.code <= 'Digit9') {
+    const slotNumber = parseInt(e.code.replace('Digit', ''));
+    setHotbarSlot(slotNumber);
+  }
 });
 document.addEventListener('keyup', (e)=>{
   if (e.code==='KeyW') move.f = false;
@@ -819,6 +1423,21 @@ document.addEventListener('keyup', (e)=>{
   if (e.code==='ShiftLeft') move.run = false;
   if (e.code === 'KeyQ') crouching = false;
 });
+
+// Scroll del mouse para cambiar slots de hotbar
+document.addEventListener('wheel', (e) => {
+  if (!pointerLocked) return;
+  
+  e.preventDefault();
+  const direction = e.deltaY > 0 ? 1 : -1;
+  let newSlot = currentSlot + direction;
+  
+  // Wrap around: del 9 al 1 y del 1 al 9
+  if (newSlot > 9) newSlot = 1;
+  if (newSlot < 1) newSlot = 9;
+  
+  setHotbarSlot(newSlot);
+}, { passive: false });
 
 // Movimiento
 const GRAVITY = 18, JUMP = 5;
@@ -873,21 +1492,55 @@ function movePlayer(dt){
 // ======== Raycaster ========
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+// Función para verificar proximidad a un objeto
+function isNearObject(object, maxDistance = 2.5) {
+  if (!object) return false;
+  
+  // Obtener posición mundial del objeto
+  const objectWorldPos = new THREE.Vector3();
+  object.getWorldPosition(objectWorldPos);
+  
+  // Calcular distancia a la cámara
+  const distance = camera.position.distanceTo(objectWorldPos);
+  return distance <= maxDistance;
+}
+
 function getFocusedArt() {
   raycaster.setFromCamera({x:0, y:0}, camera);
-  const hits = raycaster.intersectObjects(interactables, false);
-  return hits.length ? hits[0].object : null;
+  const hits = raycaster.intersectObjects(interactables, true); // true para intersectar recursivamente
+  if (hits.length) {
+    // Encontrar el frame padre que contiene el userData
+    let obj = hits[0].object;
+    while (obj && !obj.userData.title) {
+      obj = obj.parent;
+    }
+    
+    // Verificar proximidad - solo retornar si está cerca
+    if (isNearObject(obj)) {
+      return obj;
+    }
+  }
+  return null;
 }
 
 function tryOpenInfo(){
   const obj = getFocusedArt();
-  if (!obj) return;
+  if (!obj || !obj.userData || !obj.userData.title) return;
   showInfo(obj.userData.title, obj.userData.desc);
 }
 
 function updateAimLabel(){
+  // Verificar si está mirando al interruptor primero
+  if (isInterruptorFocused()) {
+    const estado = lucesPrendidas ? "apagar" : "prender";
+    label.textContent = `E: ${estado.charAt(0).toUpperCase() + estado.slice(1)} luces del museo`;
+    label.classList.add('show');
+    return;
+  }
+  
+  // Si no está mirando al interruptor, verificar obras
   const obj = getFocusedArt();
-  if (obj){
+  if (obj && obj.userData && obj.userData.title){
     label.textContent = `E: Ver "${obj.userData.title}"`;
     label.classList.add('show');
   }else{
@@ -899,11 +1552,19 @@ function updateAimLabel(){
 const panel = document.getElementById('art-info');
 const closeBtn = document.getElementById('close-info');
 const artTitle = document.getElementById('art-title');
+const artAuthor = document.getElementById('art-author');
 const artDesc  = document.getElementById('art-desc');
 closeBtn.onclick = ()=> panel.classList.add('hidden');
+
 function showInfo(title, desc){
+  // Separar autor/año de la descripción
+  const parts = desc.split('\n\n');
+  const authorInfo = parts[0]; // "Autor · Año"
+  const description = parts[1] || parts[0]; // Descripción completa o texto original si no hay separación
+  
   artTitle.textContent = title;
-  artDesc.textContent  = desc;
+  artAuthor.textContent = authorInfo;
+  artDesc.textContent = description;
   panel.classList.remove('hidden');
 }
 
@@ -960,6 +1621,11 @@ function animate(now){
     trofeoModel.rotation.y += dt * 0.3; // Rotación más lenta para el trofeo
   }
   
+  // Rotar la Copa Libertadores si está cargada
+  if (copaLibertadoresModel) {
+    copaLibertadoresModel.rotation.y += dt * 0.25; // Rotación elegante y lenta para la Copa Libertadores
+  }
+  
   // Efecto de luz en el objeto (siempre brillante)
   if (luzObjeto) {
     luzObjeto.intensity = 2.5 + Math.sin(now * 0.003) * 0.3;
@@ -983,6 +1649,8 @@ function animate(now){
 }
 
 console.log('🎮 Iniciando loop de animación...');
+console.log('🎒 Inicializando hotbar...');
+initializeHotbar();
 animate(performance.now());
 
 // Resize
@@ -995,12 +1663,11 @@ window.addEventListener('resize', ()=>{
 // Detectar si la cámara está mirando al interruptor (raycast al modelo)
 function isInterruptorFocused() {
   if (!interruptor) return false;
+  
+  // Verificar proximidad primero
+  if (!isNearObject(interruptor, 3.0)) return false;
+  
   raycaster.setFromCamera({x:0, y:0}, camera);
   const hits = raycaster.intersectObject(interruptor, true);
   return hits.length > 0;
 }
-
-
-
-
-
