@@ -1,0 +1,11 @@
+Model Information:
+* title:	FPS Arms
+* source:	https://sketchfab.com/3d-models/fps-arms-5102dc741fcf45ddb33a20091d22e428
+* author:	ian1518 (https://sketchfab.com/ian1518)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "FPS Arms" (https://sketchfab.com/3d-models/fps-arms-5102dc741fcf45ddb33a20091d22e428) by ian1518 (https://sketchfab.com/ian1518) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

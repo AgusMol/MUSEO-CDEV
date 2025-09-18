@@ -5,6 +5,61 @@ console.log('🚀 Iniciando museo virtual...');
 const CANVAS = document.getElementById("miCanvas");
 console.log('📺 Canvas encontrado:', CANVAS);
 
+// Global error handlers to help diagnose runtime failures that stop the scene from loading
+window.addEventListener('error', function (event) {
+  console.error('Global error captured:', event.error || event.message, event);
+  try {
+    const existing = document.getElementById('runtime-error-overlay');
+    if (!existing) {
+      const ov = document.createElement('div');
+      ov.id = 'runtime-error-overlay';
+      ov.style.position = 'fixed';
+      ov.style.left = '10px';
+      ov.style.right = '10px';
+      ov.style.top = '10px';
+      ov.style.padding = '12px';
+      ov.style.background = 'rgba(0,0,0,0.9)';
+      ov.style.color = '#fff';
+      ov.style.zIndex = 99999;
+      ov.style.fontFamily = 'monospace';
+      ov.style.whiteSpace = 'pre-wrap';
+      ov.style.maxHeight = '40vh';
+      ov.style.overflow = 'auto';
+      ov.textContent = 'Runtime error: ' + (event.error && event.error.stack ? event.error.stack : (event.message || String(event.error)));
+      document.body.appendChild(ov);
+    }
+  } catch (e) {
+    // ignore overlay errors
+  }
+});
+
+window.addEventListener('unhandledrejection', function (event) {
+  console.error('Unhandled Promise Rejection:', event.reason);
+  try {
+    const existing = document.getElementById('runtime-error-overlay');
+    if (!existing) {
+      const ov = document.createElement('div');
+      ov.id = 'runtime-error-overlay';
+      ov.style.position = 'fixed';
+      ov.style.left = '10px';
+      ov.style.right = '10px';
+      ov.style.top = '10px';
+      ov.style.padding = '12px';
+      ov.style.background = 'rgba(0,0,0,0.9)';
+      ov.style.color = '#fff';
+      ov.style.zIndex = 99999;
+      ov.style.fontFamily = 'monospace';
+      ov.style.whiteSpace = 'pre-wrap';
+      ov.style.maxHeight = '40vh';
+      ov.style.overflow = 'auto';
+      ov.textContent = 'Unhandled Promise Rejection: ' + (event.reason && event.reason.stack ? event.reason.stack : String(event.reason));
+      document.body.appendChild(ov);
+    }
+  } catch (e) {
+    // ignore
+  }
+});
+
 if (!CANVAS) {
   console.error('❌ Canvas no encontrado! Verificar HTML');
   throw new Error('Canvas no encontrado');
@@ -28,22 +83,31 @@ console.log('🎥 Renderer inicializado');
 scene.add(camera);
 console.log('📱 Cámara agregada a la escena');
 
+
 // Luces
+// bandera para activar/desactivar rápidamente las luces del techo
+const ENABLE_CEILING_LIGHTS = false; // cambiar a true para reactivar
+
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.8);
 scene.add(hemi);
 
-const spot = new THREE.SpotLight(0xffffff, 2.0, 60, Math.PI/5, 0.2, 1.5);
-spot.position.set(0, 7.5, 0);
-spot.castShadow = true;
-scene.add(spot);
-scene.add(spot.target);
+// Spot principal del techo (se crea solo si ENABLE_CEILING_LIGHTS)
+let spot = null;
+if (ENABLE_CEILING_LIGHTS) {
+  spot = new THREE.SpotLight(0xffffff, 2.0, 60, Math.PI/5, 0.2, 1.5);
+  spot.position.set(0, 7.5, 0);
+  spot.castShadow = true;
+  scene.add(spot);
+  scene.add(spot.target);
+}
 
 // Luz ambiental extra
 const ambient = new THREE.AmbientLight(0xffffff, 0.3);
 scene.add(ambient);
 
-// Agrupar luces principales para controlarlas
-const mainLights = [hemi, spot, ambient];
+// Agrupar luces principales para controlarlas (no incluir spot si fue desactivado)
+const mainLights = [hemi, ambient];
+if (spot) mainLights.push(spot);
 let lucesPrendidas = true;
 
 function toggleLuces() {
@@ -82,119 +146,34 @@ const floorMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.0
 });
 
-// Crear geometría del piso
-const floorGeometry = new THREE.PlaneGeometry(ROOM.w, ROOM.d);
-const parquetFloor = new THREE.Mesh(floorGeometry, floorMaterial);
+// Piso principal del museo (parquet)
+const mainFloor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), floorMaterial);
+mainFloor.rotation.x = -Math.PI/2;
+mainFloor.position.set(0, 0, 0);
+mainFloor.receiveShadow = true;
+mainFloor.name = 'mainFloor';
+room.add(mainFloor);
 
-// Posicionar el piso
-parquetFloor.rotation.x = -Math.PI / 2;
-parquetFloor.position.y = 0.01;
-parquetFloor.receiveShadow = true;
-parquetFloor.castShadow = false;
+// (Reception room will be added after ceiling is constructed)
 
-room.add(parquetFloor);
+// ======= Techo: parámetros y paneles =======
+// Asegurar que variables usadas por el techo estén definidas
+// Definir primero el tamaño de panel para poder derivar cuántos paneles encajan en la sala
+const panelSize = (typeof window.panelSize !== 'undefined') ? window.panelSize : 4.0;
+// Derivar número de paneles usando las dimensiones de la sala para evitar huecos
+const panelsX = (typeof window.panelsX !== 'undefined') ? window.panelsX : Math.ceil(ROOM.w / panelSize);
+const panelsZ = (typeof window.panelsZ !== 'undefined') ? window.panelsZ : Math.ceil(ROOM.d / panelSize);
+const frameThickness = (typeof window.frameThickness !== 'undefined') ? window.frameThickness : 0.12;
+const wallThickness = (typeof window.wallThickness !== 'undefined') ? window.wallThickness : 0.08;
+const panelDepth = (typeof window.panelDepth !== 'undefined') ? window.panelDepth : 0.12;
+const ceilingHeight = (typeof window.ceilingHeight !== 'undefined') ? window.ceilingHeight : ROOM.h - 0.4;
 
-console.log('✅ Piso de parquet uniforme creado (idéntico al segundo piso)');
+// Materiales del techo (si no existían previamente)
+const ceilingPanelMaterial = (typeof window.ceilingPanelMaterial !== 'undefined') ? window.ceilingPanelMaterial : new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.9 });
+const ceilingFrameMaterial = (typeof window.ceilingFrameMaterial !== 'undefined') ? window.ceilingFrameMaterial : new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.8 });
 
-// ======== Techo de Paneles Cuadrados Blancos ========
-console.log('🏢 Creando techo de paneles cuadrados blancos...');
-
-// Material para los paneles del techo (blanco mate)
-const ceilingPanelMaterial = new THREE.MeshStandardMaterial({
-  color: 0xf8f8f8, // Blanco ligeramente cálido
-  roughness: 0.8,  // Mate, sin brillo
-  metalness: 0.0   // No metálico
-});
-
-// Material para la estructura del techo (gris oscuro)
-const ceilingFrameMaterial = new THREE.MeshStandardMaterial({
-  color: 0x404040, // Gris oscuro para los marcos
-  roughness: 0.6,
-  metalness: 0.2
-});
-
-// Crear grupo para el techo completo
-const ceilingGroup = new THREE.Group();
-
-// Dimensiones de cada panel cuadrado
-const panelSize = 1.2;  // Tamaño de cada panel cuadrado
-const frameThickness = 0.05; // Grosor del marco entre paneles
-const ceilingHeight = ROOM.h - 0.1; // Altura del techo
-
-// Calcular número de paneles que caben en cada dirección
-const panelsX = Math.floor(ROOM.w / panelSize);
-const panelsZ = Math.floor(ROOM.d / panelSize);
-
-// Crear paneles cuadrados con profundidad (como cajas empotradas)
-const panelDepth = 0.15; // Profundidad de cada caja/hueco
-
-for (let x = 0; x < panelsX; x++) {
-  for (let z = 0; z < panelsZ; z++) {
-    // Posición de cada panel
-    const posX = (x - panelsX/2) * panelSize + panelSize/2;
-    const posZ = (z - panelsZ/2) * panelSize + panelSize/2;
-    
-    // Crear grupo para cada caja empotrada
-    const panelBox = new THREE.Group();
-    
-    // Fondo de la caja (panel principal)
-    const bottomGeometry = new THREE.BoxGeometry(
-      panelSize - frameThickness, 
-      0.02, 
-      panelSize - frameThickness
-    );
-    const bottomPanel = new THREE.Mesh(bottomGeometry, ceilingPanelMaterial);
-    bottomPanel.position.set(0, -panelDepth/2, 0);
-    bottomPanel.receiveShadow = true;
-    bottomPanel.castShadow = false;
-    panelBox.add(bottomPanel);
-    
-    // Paredes laterales de la caja (4 lados)
-    const wallThickness = 0.02;
-    
-    // Pared frontal
-    const frontWallGeometry = new THREE.BoxGeometry(
-      panelSize - frameThickness, 
-      panelDepth, 
-      wallThickness
-    );
-    const frontWall = new THREE.Mesh(frontWallGeometry, ceilingPanelMaterial);
-    frontWall.position.set(0, -panelDepth/2, (panelSize - frameThickness)/2 - wallThickness/2);
-    frontWall.receiveShadow = true;
-    frontWall.castShadow = true;
-    panelBox.add(frontWall);
-    
-    // Pared trasera
-    const backWall = new THREE.Mesh(frontWallGeometry, ceilingPanelMaterial);
-    backWall.position.set(0, -panelDepth/2, -(panelSize - frameThickness)/2 + wallThickness/2);
-    backWall.receiveShadow = true;
-    backWall.castShadow = true;
-    panelBox.add(backWall);
-    
-    // Pared izquierda
-    const sideWallGeometry = new THREE.BoxGeometry(
-      wallThickness, 
-      panelDepth, 
-      panelSize - frameThickness - wallThickness*2
-    );
-    const leftWall = new THREE.Mesh(sideWallGeometry, ceilingPanelMaterial);
-    leftWall.position.set(-(panelSize - frameThickness)/2 + wallThickness/2, -panelDepth/2, 0);
-    leftWall.receiveShadow = true;
-    leftWall.castShadow = true;
-    panelBox.add(leftWall);
-    
-    // Pared derecha
-    const rightWall = new THREE.Mesh(sideWallGeometry, ceilingPanelMaterial);
-    rightWall.position.set((panelSize - frameThickness)/2 - wallThickness/2, -panelDepth/2, 0);
-    rightWall.receiveShadow = true;
-    rightWall.castShadow = true;
-    panelBox.add(rightWall);
-    
-    // Posicionar la caja completa
-    panelBox.position.set(posX, ceilingHeight, posZ);
-    ceilingGroup.add(panelBox);
-  }
-}
+// Grupo para el techo
+const ceilingGroup = (typeof window.ceilingGroup !== 'undefined') ? window.ceilingGroup : new THREE.Group();
 
 // Crear estructura de marcos (líneas que separan los paneles)
 // Marcos horizontales
@@ -229,8 +208,80 @@ for (let z = 0; z <= panelsZ; z++) {
   ceilingGroup.add(frame);
 }
 
+// Crear paneles entre los marcos para dar aspecto de techo completo
+for (let ix = 0; ix < panelsX; ix++) {
+  for (let iz = 0; iz < panelsZ; iz++) {
+    const centerX = (ix - panelsX/2 + 0.5) * panelSize;
+    const centerZ = (iz - panelsZ/2 + 0.5) * panelSize;
+    const panelGeo = new THREE.BoxGeometry(panelSize - frameThickness*0.5, 0.08, panelSize - frameThickness*0.5);
+    const panel = new THREE.Mesh(panelGeo, ceilingPanelMaterial);
+    panel.position.set(centerX, ceilingHeight, centerZ);
+    panel.receiveShadow = true;
+    panel.castShadow = false;
+    ceilingGroup.add(panel);
+  }
+}
+
 // Agregar el techo completo a la sala
 room.add(ceilingGroup);
+
+// ======== Sala Recepción R (modelo nuevo, sin puerta) ========
+// Añadida después de construir el techo para no romper bloques de código existentes
+const receptionRoom = new THREE.Group();
+const R_w = 6; // ancho de la sala R (en x)
+const R_d = 8; // profundidad de la sala R (en z)
+const R_h = 4; // altura de la sala R
+
+// Piso de R (usar una variante de parquet más clara para diferenciar)
+const receptionFloorTex = new THREE.TextureLoader().load('./assets/textures/madera_parquet.jpg');
+receptionFloorTex.wrapS = receptionFloorTex.wrapT = THREE.RepeatWrapping;
+receptionFloorTex.repeat.set(2,2);
+const receptionFloorMat = new THREE.MeshStandardMaterial({ map: receptionFloorTex, roughness: 0.6 });
+const receptionFloor = new THREE.Mesh(new THREE.PlaneGeometry(R_w, R_d), receptionFloorMat);
+receptionFloor.rotation.x = -Math.PI/2;
+receptionFloor.position.set(0, 0.01, ROOM.d/2 + R_d/2);
+receptionFloor.receiveShadow = true;
+receptionRoom.add(receptionFloor);
+
+// Pared posterior de R
+const receptionBack = new THREE.Mesh(new THREE.BoxGeometry(R_w, R_h, 0.3), wallMat);
+receptionBack.position.set(0, R_h/2, ROOM.d/2 + R_d - 0.15);
+receptionRoom.add(receptionBack);
+
+// Pared izquierda de R
+const receptionLeftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, R_h, R_d), wallMat);
+receptionLeftWall.position.set(-R_w/2 + 0.15, R_h/2, ROOM.d/2 + R_d/2);
+receptionRoom.add(receptionLeftWall);
+
+// Pared derecha de R
+const receptionRightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, R_h, R_d), wallMat);
+receptionRightWall.position.set(R_w/2 - 0.15, R_h/2, ROOM.d/2 + R_d/2);
+receptionRoom.add(receptionRightWall);
+
+// Mostrador central en R
+const receptionDesk = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 0.6), new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.2, roughness: 0.6 }));
+receptionDesk.position.set(0, 0.45, ROOM.d/2 + 1.4);
+receptionRoom.add(receptionDesk);
+
+// Lámpara puntual en el centro de R
+const receptionLight = new THREE.PointLight(0xfff7e0, 1.4, 10);
+receptionLight.position.set(0, 2.5, ROOM.d/2 + R_d/2 - 1);
+receptionRoom.add(receptionLight);
+
+// Señal pequeña sobre el mostrador
+const signCanvas = document.createElement('canvas');
+signCanvas.width = 256; signCanvas.height = 128;
+const sctx = signCanvas.getContext('2d');
+sctx.fillStyle = '#222'; sctx.fillRect(0,0,256,128);
+sctx.fillStyle = '#fff'; sctx.font = '28px Arial'; sctx.textAlign = 'center'; sctx.fillText('Recepción', 128, 70);
+const signTex = new THREE.CanvasTexture(signCanvas);
+const signMat = new THREE.MeshBasicMaterial({ map: signTex, side: THREE.DoubleSide });
+const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.6), signMat);
+signMesh.position.set(0, 1.2, ROOM.d/2 + 0.6);
+receptionRoom.add(signMesh);
+
+// Añadir la sala R a la escena (siempre visible)
+scene.add(receptionRoom);
 
 
 // ======== Lámparas colgantes en el techo (solo modelo, sin focos) ========
@@ -254,13 +305,15 @@ for (let row = 0; row < numRows; row++) {
         scene.add(lampara);
 
         // Luz tipo SpotLight apuntando hacia el piso
-        const luzLampara = new THREE.SpotLight(0xffffff, 2.5, 12, Math.PI/6, 0.2, 0.8);
-        luzLampara.position.set(x, offsetY - 0.2, z);
-        luzLampara.target.position.set(x, .5, z);
-        luzLampara.castShadow = false;
-        scene.add(luzLampara);
-        scene.add(luzLampara.target);
-        lamparasSpotLights.push(luzLampara);
+        if (ENABLE_CEILING_LIGHTS) {
+          const luzLampara = new THREE.SpotLight(0xffffff, 2.5, 12, Math.PI/6, 0.2, 0.8);
+          luzLampara.position.set(x, offsetY - 0.2, z);
+          luzLampara.target.position.set(x, .5, z);
+          luzLampara.castShadow = false;
+          scene.add(luzLampara);
+          scene.add(luzLampara.target);
+          lamparasSpotLights.push(luzLampara);
+        }
       },
       undefined,
       function(error) {
@@ -282,6 +335,9 @@ const wallRight = wall(0.3, ROOM.h, ROOM.d); wallRight.position.set( ROOM.w/2, R
 room.add(wallBack, wallFront, wallLeft, wallRight);
 
 scene.add(room);
+
+// (Removed legacy interactive door and its hidden reception)
+
 
 // ======== Escalera Central y Segunda Planta ========
 console.log('🏗️ Creando escalera central y segunda planta...');
@@ -597,6 +653,12 @@ console.log('✅ Escalera central y balcón perimetral creados');
 
 // ======== Obras / marcos ========
 const interactables = [];
+// Si durante la ejecución temprana añadimos objetos antes de que 'interactables' existiera,
+// los guardamos en window.__pendingInteractables. Ahora los vaciamos.
+if (window.__pendingInteractables && Array.isArray(window.__pendingInteractables)) {
+  window.__pendingInteractables.forEach(obj => { try { interactables.push(obj); } catch(e){} });
+  window.__pendingInteractables = [];
+}
 const loader = new THREE.TextureLoader();
 
 function addFrame(opts) {
@@ -606,58 +668,135 @@ function addFrame(opts) {
     title = "Obra sin título",
     desc = "Descripción de ejemplo"
   } = opts;
+  console.log('addFrame called', { x, z, face, img, title });
+  try {
+  // Creamos un marco 2D (sin modelos GLTF) compuesto por:
+  // - un plano para la obra (imagen)
+  // - cuatro barras (boxes) que forman el contorno del marco
+  // Intentamos usar una textura de 'frame' si existe en './assets/images/frame.png'
 
-  // Cargar modelo GLTF del cuadro como marco
-  const gltfLoaderFrame = new GLTFLoader();
+  const frameGroup = new THREE.Group();
+  frameGroup.position.set(x, 1.7, z);
+
+  // Orientación según pared
+  if (face === "back") frameGroup.rotation.y = Math.PI;
+  if (face === "left") frameGroup.rotation.y = Math.PI / 2;
+  if (face === "right") frameGroup.rotation.y = -Math.PI / 2;
+
+  // Dimensiones del cuadro (más pequeñas según petición)
+  const artWidth = 1.8; // ancho del cuadro (reducido)
+  const artHeight = 1.2; // alto del cuadro (aprox 3:2)
+  const artDepth = 0.02;
+  const frameThickness = 0.08; // grosor del marco alrededor (reducido)
+
+  // Cargar textura de la obra
+  const artMat = new THREE.MeshBasicMaterial({ color: 0xdddddd, side: THREE.DoubleSide });
+  const artPlane = new THREE.Mesh(new THREE.PlaneGeometry(artWidth, artHeight), artMat);
+  // Colocar la obra ligeramente detrás del plano del marco para que parezca 'dentro' del marco
+  artPlane.position.set(0, 0, -0.01);
+  artPlane.userData = { title, desc };
+  artPlane.receiveShadow = true;
+  frameGroup.add(artPlane);
   
-  gltfLoaderFrame.load(
-    './assets/models/cuadros/cuadro2/cuadro2.gltf',
-    function (gltf) {
-      const frame = gltf.scene;
-      frame.scale.set(0.021, 0.021, 0.021);
-      frame.position.set(x, 1.7, z);
-      
-      // Orientación según pared
-      if (face === "back") frame.rotation.y = Math.PI;
-      if (face === "left") frame.rotation.y = Math.PI/2;
-      if (face === "right") frame.rotation.y = -Math.PI/2;
-      
-      // Configurar sombras
-      frame.traverse(obj => {
-        if (obj.isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-        }
-      });
-      
-      // Crear la imagen con el tamaño perfecto para llenar el marco
-      const tex = loader.load(img);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const art = new THREE.Mesh(
-        new THREE.PlaneGeometry(56.5, 36.5), // Tamaño ajustado para llenar perfectamente el marco
-        new THREE.MeshBasicMaterial({ map: tex })
-      );
-      art.position.z = 1.5; // Ajustar posición Z también
-      frame.add(art);
+        // Cargar textura de la obra y aplicarla al material del artPlane cuando esté lista
+        loader.load(
+          img,
+          function (texture) {
+            try {
+              if (texture && texture.isTexture) {
+                texture.colorSpace = THREE.SRGBColorSpace;
+                artPlane.material.map = texture;
+                artPlane.material.color.setHex(0xffffff);
+                artPlane.material.needsUpdate = true;
+              }
+            } catch (e) {
+              console.warn('Error aplicando textura a artPlane:', img, e);
+            }
+          },
+          undefined,
+          function(err){
+            console.warn('❗ No se pudo cargar la imagen de obra:', img, err, 'intentando fallback colonCampeon.jpg');
+            // Intentar fallback a textura conocida en assets/textures
+            loader.load('./assets/textures/colonCampeon.jpg', function(fallbackTex){
+              try{
+                if (fallbackTex && fallbackTex.isTexture) {
+                  fallbackTex.colorSpace = THREE.SRGBColorSpace;
+                  artPlane.material.map = fallbackTex;
+                  artPlane.material.color.setHex(0xffffff);
+                  artPlane.material.needsUpdate = true;
+                }
+              } catch(e2){
+                console.warn('Error aplicando fallback:', e2);
+                artPlane.material.color.setHex(0x888888);
+                artPlane.material.needsUpdate = true;
+              }
+            }, undefined, function(finalErr){
+              console.warn('Fallback texture failed:', finalErr);
+              artPlane.material.color.setHex(0x888888);
+              artPlane.material.needsUpdate = true;
+            });
+          }
+        );
+  // artPlane ya fue creado y agregado más arriba (evitamos duplicarlo)
 
-      // Luz propia para la obra
-      const obraLight = new THREE.PointLight(0xffffff, 1.5, 8);
-      obraLight.position.set(0, 10, 8); // Ajustar posición para la imagen más grande
-      frame.add(obraLight);
+  // Intentar cargar textura del contorno (archivo opcional que el usuario puede añadir)
+  // Probamos frame textures si es necesario
+  // Crear marco en código (4 barras) - sin dependencias externas
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0xB8860B, metalness: 0.7, roughness: 0.25 });
 
-      frame.userData = { title, desc };
-      scene.add(frame);
-      interactables.push(frame);
-      
-      console.log(`🖼️ Marco GLTF cargado en posición (${x}, ${z}) - ${title}`);
-    },
-    function (progress) {
-      console.log(`📥 Cargando marco en (${x}, ${z}):`, Math.round(progress.loaded / progress.total * 100) + '%');
-    },
-    function (error) {
-      console.error(`❌ Error cargando marco en posición (${x}, ${z}):`, error);
-    }
-  );
+  const halfW = artWidth / 2;
+  const halfH = artHeight / 2;
+  const barDepth = frameThickness; // profundidad de las barras del marco
+
+  // Colocar las barras ligeramente delante del plano de la obra (z positivo) para que la obra quede 'dentro'
+  const barZ = 0.01;
+
+  // Top bar
+  const topBarGeo = new THREE.BoxGeometry(artWidth + frameThickness * 2, frameThickness, barDepth);
+  const topBar = new THREE.Mesh(topBarGeo, frameMat);
+  topBar.position.set(0, halfH + frameThickness / 2, barZ);
+  topBar.castShadow = true;
+  topBar.receiveShadow = true;
+  frameGroup.add(topBar);
+
+  // Bottom bar
+  const bottomBar = new THREE.Mesh(topBarGeo.clone(), frameMat);
+  bottomBar.position.set(0, -halfH - frameThickness / 2, barZ);
+  bottomBar.castShadow = true;
+  bottomBar.receiveShadow = true;
+  frameGroup.add(bottomBar);
+
+  // Left bar
+  const sideBarGeo = new THREE.BoxGeometry(frameThickness, artHeight, barDepth);
+  const leftBar = new THREE.Mesh(sideBarGeo, frameMat);
+  leftBar.position.set(-halfW - frameThickness / 2, 0, barZ);
+  leftBar.castShadow = true;
+  leftBar.receiveShadow = true;
+  frameGroup.add(leftBar);
+
+  // Right bar
+  const rightBar = new THREE.Mesh(sideBarGeo.clone(), frameMat);
+  rightBar.position.set(halfW + frameThickness / 2, 0, barZ);
+  rightBar.castShadow = true;
+  rightBar.receiveShadow = true;
+  frameGroup.add(rightBar);
+
+  // overlay frontal eliminado por petición del usuario (ya no se añade)
+
+  // Pequeña luz puntual para destacar la obra (opcional)
+  const obraLight = new THREE.PointLight(0xffffff, 1.2, 6);
+  obraLight.position.set(0, 0.6, 1.5);
+  frameGroup.add(obraLight);
+
+  // Añadir metadata para interacción
+  frameGroup.userData = { title, desc };
+  scene.add(frameGroup);
+  interactables.push(frameGroup);
+
+  console.log(`🖼️ Marco 2D creado en posición (${x}, ${z}) - ${title}`);
+  } catch (err) {
+    console.error('addFrame error for', { x, z, img, title }, err);
+  }
 }
 
 // ======== Función para crear placas doradas informativas ========
@@ -765,44 +904,31 @@ function createGoldenPlaque(title, description) {
   return plaqueGroup;
 }
 
-// ======== Catálogo de Obras Específicas ========
-const obrasCatalogo = [
-  {
-    img: "./assets/images/EL DIIIIIEGO.jpg",
-    title: "El Eterno Capitán",
-    author: "Roberto Martínez",
-    year: "2020",
-    desc: "Retrato icónico del legendario Diego Armando Maradona, capturando su esencia como líder y símbolo del fútbol argentino. La obra refleja la pasión y el carisma que lo convirtieron en una figura universal del deporte."
-  },
-  {
-    img: "./assets/images/cafeteras.jpg",
-    title: "Naturaleza Muerta con Cafeteras",
-    author: "Elena Vásquez",
-    year: "2019",
-    desc: "Una composición elegante que explora la relación entre los objetos cotidianos y la luz. Las cafeteras, dispuestas con precisión geométrica, crean un diálogo entre la funcionalidad y la belleza estética."
-  },
-  {
-    img: "./assets/images/obra3.jpg",
-    title: "Composición Abstracta III",
-    author: "Carlos Mendoza",
-    year: "2021",
-    desc: "Exploración de formas y colores que trasciende la representación figurativa. Esta obra invita al espectador a una experiencia puramente visual, donde la armonía cromática genera emociones profundas."
-  },
-  {
-    img: "./assets/images/obra4.jpg",
-    title: "Reflexiones Urbanas",
-    author: "Ana Morales",
-    year: "2022",
-    desc: "Una mirada contemporánea sobre la vida en la ciudad moderna. Los contrastes de luz y sombra representan las dualidades de la experiencia urbana: soledad y conexión, progreso y nostalgia."
-  },
-  {
-    img: "./assets/textures/colonCampeon.jpg",
-    title: "Colón Campeón - Copa de la Liga 2021",
-    author: "Matías Nicolás Espósito",
-    year: "2021",
-    desc: "COLÓN CAMPEÓN ⭐ EL RESTO LO AGREGAN USTEDES"
-  }
+// ======== Catálogo de Obras (generado dinámicamente a partir de assets/images) ========
+// Si hay pocas imágenes, se repiten para completar la distribución de la sala.
+const availableImageFiles = [
+  './assets/images/cafeteras.jpg',
+  './assets/images/colonCampeon.jpg',
+  './assets/images/Maradona_copa_del_mundo.png'
 ];
+
+function buildObrasCatalog(count) {
+  const catalog = [];
+  for (let i = 0; i < count; i++) {
+    const src = availableImageFiles[i % availableImageFiles.length];
+    catalog.push({
+      img: src,
+      title: `Obra ${i + 1}`,
+      author: '',
+      year: '',
+      desc: ''
+    });
+  }
+  return catalog;
+}
+
+// Queremos cubrir 20 posiciones (4 paredes x 5 obras)
+const obrasCatalogo = buildObrasCatalog(20);
 
 // Función auxiliar para obtener obra por índice
 function getObra(index) {
@@ -1081,7 +1207,8 @@ vitrinaGroup.add(placa1);
 interactables.push(placa1);
 
 // Posicionar la vitrina en el museo
-vitrinaGroup.position.set(-6, 0, 6);
+vitrinaGroup.position.set(-7.5, 0, 6);
+vitrinaGroup.rotation.y = Math.PI;
 vitrinaGroup.castShadow = true;
 vitrinaGroup.receiveShadow = true;
 scene.add(vitrinaGroup);
@@ -1188,7 +1315,9 @@ vitrina2Group.add(placa2);
 interactables.push(placa2);
 
 // Posicionar la segunda vitrina en el museo
-vitrina2Group.position.set(-6, 0, 3);
+vitrina2Group.position.set(-7.5, 0, 3);
+// Rotar la vitrina 180° en Y para que mire hacia el centro
+vitrina2Group.rotation.y = Math.PI;
 vitrina2Group.castShadow = true;
 vitrina2Group.receiveShadow = true;
 scene.add(vitrina2Group);
@@ -1216,8 +1345,146 @@ gltfLoader2.load(
   './assets/models/world_cup_trophy/scene.gltf',
   function (gltf) {
   trofeoModel = gltf.scene;
-  trofeoModel.scale.set(0.0009, 0.0009, 0.0009); // Ajuste de escala para que la copa entre en la vitrina
-  trofeoModel.position.set(0, 0.1605, 0); // Subir la copa para que quede sobre el pedestal
+  // Pre-cargar los mapas base que usamos para materiales simplificados
+  const globeBaseTexture = new THREE.TextureLoader().load(
+    './assets/models/world_cup_trophy/textures/globe_baseColor.png',
+    function(tex){ try { tex.colorSpace = THREE.SRGBColorSpace; } catch(e){} },
+    undefined,
+    function(err){ console.warn('No se pudo precargar globe_baseColor.png:', err); }
+  );
+  const globeNormalTexture = new THREE.TextureLoader().load(
+    './assets/models/world_cup_trophy/textures/globe_normal.png',
+    function(tex){ try { tex.colorSpace = THREE.LinearSRGBColorSpace; } catch(e){} },
+    undefined,
+    function(err){ /* no normal available, that's ok */ }
+  );
+  const bodyBaseTexture = new THREE.TextureLoader().load(
+    './assets/models/world_cup_trophy/textures/body_baseColor.png',
+    function(tex){ try { tex.colorSpace = THREE.SRGBColorSpace; } catch(e){} },
+    undefined,
+    function(err){ console.warn('No se pudo precargar body_baseColor.png:', err); }
+  );
+  const bodyNormalTexture = new THREE.TextureLoader().load(
+    './assets/models/world_cup_trophy/textures/body_normal.png',
+    function(tex){ try { tex.colorSpace = THREE.LinearSRGBColorSpace; } catch(e){} },
+    undefined,
+    function(err){ /* no normal available, that's ok */ }
+  );
+  // Aumentamos la escala para asegurar visibilidad (ajustable)
+  // La escala previa era demasiado pequeña (0.0009) y podía hacer que el modelo no se vea.
+  trofeoModel.scale.set(0.0009, 0.0009, 0.0009);
+  // Ajuste de posición para que quede bien sobre el pedestal (elevado)
+  trofeoModel.position.set(0, 0.150, 0);
+  // Mantener los materiales originales para conservar los mapas PBR (base, normal, metallicRoughness).
+  // Solo activamos sombras y ajustamos el colorSpace de los mapas apropiadamente.
+  trofeoModel.traverse(function (node) {
+    if (!node.isMesh) return;
+    node.castShadow = true;
+    node.receiveShadow = true;
+    node.visible = true;
+
+    // Helper: set colorSpace only if texture image is loaded
+    function safeSetColorSpace(tex, space){
+      if (!tex) return;
+      if (tex.image) {
+        try { tex.colorSpace = space; } catch(e){}
+      } else {
+        console.warn('Texture presente sin image todavía:', tex, 'material:', (node.material && node.material.name) || '(unnamed)');
+      }
+    }
+
+    try {
+      const nodeName = (node.name || '').toLowerCase();
+      const mat = node.material;
+
+      // Quick heuristic: count how many texture slots are present. If more than 2,
+      // we'll replace the material with a single-map material to avoid exceeding
+      // MAX_TEXTURE_IMAGE_UNITS in the fragment shader.
+      function countTextureSlots(m) {
+        if (!m) return 0;
+        let c = 0;
+        ['map','aoMap','emissiveMap','metalnessMap','roughnessMap','metalnessRoughnessMap','normalMap','displacementMap','envMap'].forEach(k => {
+          if (m[k]) c++;
+        });
+        return c;
+      }
+
+      // If material is an array, sum counts
+      let totalMaps = 0;
+      if (Array.isArray(mat)) {
+        mat.forEach(m => totalMaps += countTextureSlots(m));
+      } else {
+        totalMaps = countTextureSlots(mat);
+      }
+
+      // If material is clearly heavy or has >2 maps, replace it.
+      const matName = (mat && mat.name) ? mat.name.toLowerCase() : '';
+      if (totalMaps > 2 || nodeName.includes('globe') || matName.includes('globe') || nodeName.includes('body') || matName.includes('body')) {
+        // Choose best available base map
+        let baseTex = null;
+        // Prefer the material's own map if it already has one loaded
+        if (mat && mat.map && mat.map.image) baseTex = mat.map;
+        // Check common alternate keys that some exporters use
+        if (!baseTex && mat) {
+          const candidates = ['baseMap','baseColorMap','albedoMap','diffuseMap','baseColorTexture'];
+          for (let k of candidates) {
+            if (mat[k] && mat[k].image) { baseTex = mat[k]; break; }
+          }
+        }
+        // Inspect texture names if still missing
+        if (!baseTex && mat) {
+          const inspect = (t) => (t && t.image && t.image.src) ? t.image.src.toLowerCase() : '';
+          const tryExtract = (m) => {
+            for (let k in m) {
+              if (!m[k] || !m[k].image) continue;
+              const src = inspect(m[k]);
+              if (src.includes('base') || src.includes('albedo') || src.includes('diffuse')) return m[k];
+              if (src.includes('body') || src.includes('globe')) return m[k];
+            }
+            return null;
+          };
+          baseTex = tryExtract(mat) || null;
+        }
+        // Fallback to preloaded textures
+        if (!baseTex) baseTex = bodyBaseTexture || globeBaseTexture || null;
+
+        // pick a normal map if available and matching the base texture choice
+        let normalForReplacement = null;
+        if (baseTex === bodyBaseTexture) normalForReplacement = bodyNormalTexture;
+        else if (baseTex === globeBaseTexture) normalForReplacement = globeNormalTexture;
+        // if material had its own normalMap, prefer that
+        if (mat && mat.normalMap && mat.normalMap.image) normalForReplacement = mat.normalMap;
+
+        const replacement = new THREE.MeshStandardMaterial({ map: baseTex || null, normalMap: normalForReplacement || null, metalness: 0.9, roughness: 0.25 });
+        // ensure encodings are correct when the images are ready
+        if (replacement.map && replacement.map.image) try { replacement.map.colorSpace = THREE.SRGBColorSpace; } catch(e){}
+        if (replacement.normalMap && replacement.normalMap.image) try { replacement.normalMap.colorSpace = THREE.LinearSRGBColorSpace; } catch(e){}
+        node.material = replacement;
+        node.material.needsUpdate = true;
+        return;
+      }
+
+      // Otherwise be defensive and set colorSpace only where safe.
+      if (Array.isArray(mat)) {
+        mat.forEach(m => {
+          if (!m) return;
+          safeSetColorSpace(m.map, THREE.SRGBColorSpace);
+          safeSetColorSpace(m.normalMap, THREE.LinearSRGBColorSpace);
+          safeSetColorSpace(m.metalnessMap, THREE.LinearSRGBColorSpace);
+          safeSetColorSpace(m.roughnessMap, THREE.LinearSRGBColorSpace);
+          safeSetColorSpace(m.metalnessRoughnessMap, THREE.LinearSRGBColorSpace);
+        });
+      } else if (mat) {
+        safeSetColorSpace(mat.map, THREE.SRGBColorSpace);
+        safeSetColorSpace(mat.normalMap, THREE.LinearSRGBColorSpace);
+        safeSetColorSpace(mat.metalnessMap, THREE.LinearSRGBColorSpace);
+        safeSetColorSpace(mat.roughnessMap, THREE.LinearSRGBColorSpace);
+        safeSetColorSpace(mat.metalnessRoughnessMap, THREE.LinearSRGBColorSpace);
+      }
+    } catch(e) {
+      console.warn('Error procesando malla del trofeo:', e);
+    }
+  });
   trofeo2Group.add(trofeoModel);
   console.log('🏆 Trofeo cargado y posicionado');
   },
@@ -1235,6 +1502,10 @@ vitrina2Group.add(trofeo2Group);
 
 // Luz desde arriba para el trofeo (más intensa y dorada)
 const luzTrofeo = new THREE.SpotLight(0xffffff, 6.0, 8, Math.PI / 3, 0.1, 1);
+luzTrofeo.position.set(0, vitrina2BaseY + 0.65 + 1.5, 0);
+// Aumentar intensidad/alcance para asegurar iluminación sobre el trofeo
+luzTrofeo.intensity = 8.0;
+luzTrofeo.distance = 10;
 luzTrofeo.position.set(0, vitrina2BaseY + 0.65 + 1.5, 0);
 luzTrofeo.target.position.set(0, vitrina2BaseY + 0.2, 0);
 luzTrofeo.castShadow = true;
@@ -1345,7 +1616,7 @@ vitrina3Group.add(marcoSuperior3);
 
 // ======== Placa informativa de la Vitrina 3 ========
 const placa3 = createGoldenPlaque(
-  "COPA LIBERTADORES 2021",
+  "COPA CONMEBOL LIBERTADORES",
   "Trofeo de la Copa CONMEBOL Libertadores, el torneo de clubes más prestigioso de Sudamérica. Esta competencia, que comenzó en 1960 como Copa de Campeones de América, reúne a los mejores equipos del continente. El trofeo actual, diseñado por la casa de orfebrería argentina Casa Escasany, está hecho de plata con baños de oro y pesa aproximadamente 9 kg. La Copa Libertadores representa la gloria máxima del fútbol de clubes sudamericano y clasifica al campeón para la Copa Mundial de Clubes FIFA."
 );
 placa3.position.set(0.37, 0.9, 0); // Pegada al lado del pedestal
@@ -1356,9 +1627,8 @@ vitrina3Group.add(placa3);
 
 // Agregar placa a interactables
 interactables.push(placa3);
-
-// Posicionar la tercera vitrina en el centro del museo
-vitrina3Group.position.set(-6, 0, 0); // ubicación vitrina
+vitrina3Group.position.set(-7.5, 0, 0);
+vitrina3Group.rotation.y = Math.PI;
 vitrina3Group.castShadow = true;
 vitrina3Group.receiveShadow = true;
 scene.add(vitrina3Group);
@@ -1387,6 +1657,38 @@ gltfLoader3.load(
   copaLibertadoresModel = gltf.scene;
   copaLibertadoresModel.scale.set(0.09, 0.09, 0.09); // Similar escala que el trofeo mundial
   copaLibertadoresModel.position.set(0, 0.1605, 0); // Subir la copa para que quede sobre el pedestal
+  // Simplificar materiales
+  copaLibertadoresModel.traverse(function(node){
+    if (node.isMesh) {
+      node.castShadow = true; node.receiveShadow = true;
+      try {
+        const oldMat = node.material;
+        let baseMap = null;
+        let normalMap = null;
+        let metalness = 0.9;
+        let roughness = 0.2;
+        if (oldMat) {
+          if (Array.isArray(oldMat)) {
+            const found = oldMat.find(m => m && (m.map || m.normalMap));
+            baseMap = found ? (found.map || null) : (oldMat[0] && oldMat[0].map ? oldMat[0].map : null);
+            normalMap = found ? (found.normalMap || null) : (oldMat[0] && oldMat[0].normalMap ? oldMat[0].normalMap : null);
+          } else {
+            baseMap = oldMat.map || null;
+            normalMap = oldMat.normalMap || null;
+            if (oldMat.metalness !== undefined) metalness = oldMat.metalness;
+            if (oldMat.roughness !== undefined) roughness = oldMat.roughness;
+          }
+        }
+        if (baseMap || normalMap) {
+          try { if (baseMap) baseMap.colorSpace = THREE.SRGBColorSpace; } catch(e){}
+          node.material = new THREE.MeshStandardMaterial({ map: baseMap || null, normalMap: normalMap || null, metalness: metalness, roughness: roughness });
+        } else {
+          node.material = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: metalness, roughness: roughness });
+        }
+        node.material.needsUpdate = true;
+      } catch(e) { console.warn('Error simplificando material copaLibertadores:', e); }
+    }
+  });
   copaLibertadores3Group.add(copaLibertadoresModel);
   console.log('🏆 Copa Libertadores 2021 cargada y posicionada');
   },
@@ -1421,6 +1723,184 @@ vitrina3Group.add(luzLateralCopa2);
 // Luz ambiental adicional solo para la vitrina de la Copa Libertadores
 const luzAmbientalCopaLibertadores = new THREE.AmbientLight(0xffffff, 0.4);
 vitrina3Group.add(luzAmbientalCopaLibertadores);
+
+// ======== Vitrina cilíndrica alta (suelo a techo) en el centro del salón ========
+const vitrinaTallGroup = new THREE.Group();
+
+// Calculamos la altura total desde el suelo hasta el techo
+const tallGlassHeight = ROOM.h - 0.02; // dejar un pequeño margen
+// Incrementar el radio exterior del cilindro para hacer la vitrina más ancha
+const tallRadius = 2.5; // radio exterior del cilindro (diámetro ~3.0)
+
+// Base sólida (pequeño pedestal ancho)
+const tallBase = new THREE.Mesh(
+  new THREE.CylinderGeometry(tallRadius + 0.05, tallRadius + 0.05, 0.18, 64),
+  new THREE.MeshStandardMaterial({ color: 0x141414, metalness: 0.4, roughness: 0.6 })
+);
+tallBase.position.y = 0.09;
+tallBase.castShadow = false; // evitar sombra dura en el piso
+tallBase.receiveShadow = true;
+vitrinaTallGroup.add(tallBase);
+
+// Vidrio cilíndrico que llega hasta el techo
+const tallGlassMat = vidriaMaterial.clone();
+tallGlassMat.opacity = 0.18;
+tallGlassMat.transparent = true;
+
+const tallGlass = new THREE.Mesh(
+  new THREE.CylinderGeometry(tallRadius, tallRadius, tallGlassHeight, 64, 1, true),
+  tallGlassMat
+);
+// Centrar el vidrio en el eje Y (la mitad del tallGlassHeight sobre el suelo)
+tallGlass.position.y = tallGlassHeight / 2;
+tallGlass.castShadow = false;
+tallGlass.receiveShadow = true;
+vitrinaTallGroup.add(tallGlass);
+
+// Anillo superior para rematar en el techo
+const tallTopRing = new THREE.Mesh(
+  new THREE.TorusGeometry(tallRadius + 0.02, 0.04, 16, 100),
+  marcoMaterial
+);
+tallTopRing.rotation.x = Math.PI / 2;
+tallTopRing.position.y = tallGlassHeight;
+tallTopRing.castShadow = false; // no proyectar sombra dura desde el marco superior
+vitrinaTallGroup.add(tallTopRing);
+
+const tallCeilingLight = new THREE.SpotLight(0xffffff, 3.5, ROOM.h, Math.PI / 6, 0.08, 1);
+tallCeilingLight.position.set(0, tallGlassHeight + 0.3, 0);
+tallCeilingLight.target.position.set(0, 0.6, 0);
+// Desactivar sombras para evitar una proyección oscura muy marcada en el suelo
+tallCeilingLight.castShadow = false;
+vitrinaTallGroup.add(tallCeilingLight);
+vitrinaTallGroup.add(tallCeilingLight.target);
+
+// Pequeña plataforma interior para exponer un objeto (vacía por ahora)
+const innerPlatform = new THREE.Mesh(
+  new THREE.CylinderGeometry(tallRadius * 0.4, tallRadius * 0.4, 0.12, 32),
+  new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.4, roughness: 0.5 })
+);
+innerPlatform.position.y = 0.12;
+innerPlatform.castShadow = true;
+innerPlatform.receiveShadow = true;
+vitrinaTallGroup.add(innerPlatform);
+
+// ======== Escudo AFA en la vitrina central (replicando comportamiento de Jabulani/trofeos)
+// Nota: Este bloque carga el GLTF del escudo AFA y lo posiciona sobre
+// la plataforma interior de la vitrina cilíndrica central. Si el modelo
+// se ve desalineado o con escala incorrecta, ajustar `scale` y `rotation`
+// dentro del callback del loader. Para probar localmente, abre `index.html`
+// o `test.html` en un servidor local (no file://) y verifica la vitrina
+// central; el escudo debería estar rotando si se desea (rotación añadida
+// abajo en el bucle animate si se requiere).
+const escudoGroup = new THREE.Group();
+const escudoPedestal = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.45, 0.45, 0.12, 32),
+  new THREE.MeshStandardMaterial({ color: 0x141414, metalness: 0.4, roughness: 0.6 })
+);
+escudoPedestal.position.y = 0.06;
+escudoPedestal.castShadow = true;
+escudoPedestal.receiveShadow = true;
+escudoGroup.add(escudoPedestal);
+
+// GLTF loader para el escudo AFA
+const gltfLoaderEscudo = new GLTFLoader();
+let escudoModel = null;
+console.log('🛡️ Iniciando carga del escudo AFA en la vitrina central...');
+// Placeholder: si el GLTF no se ve por unidades/escala, mostrar una placa con la textura del escudo
+const escudoTextureLoader = new THREE.TextureLoader();
+let escudoPlaceholder = null;
+escudoTextureLoader.load(
+  './assets/models/escudo_afa_-_argentina__afa_shield_-_argentina/textures/escudo-afa_baseColor.png',
+  function(tex){
+    try{
+      tex.flipY = false;
+      tex.colorSpace = THREE.SRGBColorSpace;
+    }catch(e){}
+    const mat = new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide });
+    // Un plano vertical como fallback (ancho x alto aproximado)
+    escudoPlaceholder = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.1), mat);
+    // Posicionar el placeholder sobre el pedestal, centrado
+    escudoPlaceholder.position.set(0, 0.18, 0);
+    escudoPlaceholder.rotation.y = Math.PI; // hacer frente hacia el visitante
+    escudoPlaceholder.castShadow = true;
+    escudoPlaceholder.receiveShadow = true;
+    escudoGroup.add(escudoPlaceholder);
+  }, undefined, function(err){
+    console.warn('No se pudo cargar la textura del placeholder del escudo:', err);
+  }
+);
+gltfLoaderEscudo.load(
+  './assets/models/escudo_afa_-_argentina__afa_shield_-_argentina/scene.gltf',
+  function(gltf) {
+    escudoModel = gltf.scene;
+    // Ajustes iniciales: el modelo del escudo suele ser grande; escalar y posicionar sobre el pedestal
+    // Probar una escala más conservadora y orientación erguida
+    escudoModel.scale.set(3, 3, 3);
+    // Poner el escudo un poco elevado para que se apoye sobre el pedestal
+    escudoModel.position.set(0, 2, 0);
+    // Orientación erguida por defecto (si el modelo viene tumbado, ajustar manualmente)
+    escudoModel.rotation.set(0, Math.PI, 0);
+    // Activar sombras y simplificar materiales en las mallas para evitar exceso de texturas
+    escudoModel.traverse(function(node){
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        try {
+          const oldMat = node.material;
+          let baseMap = null;
+          if (oldMat) {
+            if (Array.isArray(oldMat)) {
+              const found = oldMat.find(m => m && m.map);
+              baseMap = found ? found.map : (oldMat[0] && oldMat[0].map ? oldMat[0].map : null);
+            } else {
+              baseMap = oldMat.map || null;
+            }
+          }
+          if (baseMap) {
+            try { baseMap.colorSpace = THREE.SRGBColorSpace; } catch(e){}
+            node.material = new THREE.MeshStandardMaterial({ map: baseMap, metalness: 0.2, roughness: 0.8 });
+          } else {
+            node.material = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 0.2, roughness: 0.8 });
+          }
+          node.material.needsUpdate = true;
+        } catch(e) {
+          console.warn('Error simplificando material del escudo:', e);
+        }
+      }
+    });
+    escudoGroup.add(escudoModel);
+    // Si el placeholder existe, ocultarlo porque ahora tenemos el modelo real
+    try{ if (escudoPlaceholder) escudoPlaceholder.visible = false; } catch(e){}
+    console.log('✅ Escudo AFA cargado y posicionado en vitrina central');
+  },
+  undefined,
+  function(err){
+    console.error('❌ Error cargando escudo AFA:', err);
+  }
+);
+
+// Luz focal para el escudo dentro de la vitrina alta
+const luzEscudo = new THREE.SpotLight(0xffffff, 3.0, 10, Math.PI/6, 0.12, 1);
+luzEscudo.position.set(0, tallGlassHeight - 0.5, 0);
+luzEscudo.target.position.set(0, 0.2, 0);
+luzEscudo.castShadow = true;
+vitrinaTallGroup.add(luzEscudo);
+vitrinaTallGroup.add(luzEscudo.target);
+
+// Añadir el grupo del escudo a la plataforma interior
+escudoGroup.position.set(0, innerPlatform.position.y, 0);
+vitrinaTallGroup.add(escudoGroup);
+// Hacer interactuable la placa del escudo (si se desea más adelante)
+interactables.push(escudoGroup);
+
+
+// Posicionar en el centro del salón
+vitrinaTallGroup.position.set(0, 0, 0);
+vitrinaTallGroup.castShadow = true;
+vitrinaTallGroup.receiveShadow = true;
+scene.add(vitrinaTallGroup);
+console.log('✅ Vitrina cilíndrica alta agregada al centro del salón');
 
 
 // Sistema de colisiones para todas las vitrinas
@@ -1457,6 +1937,39 @@ function checkVitrinaCollision(newPos) {
 
   if (dx3 < (vitrina3Size.x / 2 + playerRadius) && dz3 < (vitrina3Size.z / 2 + playerRadius)) {
     return true;
+  }
+
+  // Vitrina central cilíndrica (suelo-techo)
+  // Usamos tallGlass (grupo vitrinaTallGroup) y tallRadius definido más arriba para evitar entrar dentro
+  try {
+    if (typeof vitrinaTallGroup !== 'undefined' && vitrinaTallGroup) {
+      // center XZ de la vitrina
+      const tallCenter = vitrinaTallGroup.position;
+      const dxTall = newPos.x - tallCenter.x;
+      const dzTall = newPos.z - tallCenter.z;
+      const distXZ = Math.sqrt(dxTall * dxTall + dzTall * dzTall);
+      // padding pequeño para que el jugador no roce el vidrio
+      const padding = 0.25;
+      if (distXZ < (tallRadius + playerRadius + padding)) {
+        return true;
+      }
+    }
+  } catch(e) {
+    // en caso de error no bloquear otras comprobaciones
+    console.warn('checkVitrinaCollision: error comprobando vitrina central', e);
+  }
+
+  // Vitrina 4 (Copa América) - colocada junto a la vitrina 3
+  if (typeof vitrina4Group !== 'undefined') {
+    const vitrina4Pos = vitrina4Group.position;
+    const vitrina4Size = { x: 0.7, z: 0.7 };
+
+    const dx4 = Math.abs(newPos.x - vitrina4Pos.x);
+    const dz4 = Math.abs(newPos.z - vitrina4Pos.z);
+
+    if (dx4 < (vitrina4Size.x / 2 + playerRadius) && dz4 < (vitrina4Size.z / 2 + playerRadius)) {
+      return true;
+    }
   }
 
   return false;
@@ -1613,7 +2126,7 @@ document.addEventListener('keydown', (e)=>{
       toggleLuces();
       animarInterruptor();
     } else {
-      // Si no está mirando al interruptor, intentar abrir info de obra
+      // Intentar abrir info de obra
       tryOpenInfo();
     }
   }
@@ -1830,6 +2343,7 @@ function updateAimLabel(){
   }
   
   // Si no está mirando al interruptor, verificar obras
+
   const obj = getFocusedArt();
   if (obj && obj.userData && obj.userData.title){
     label.textContent = `E: Ver "${obj.userData.title}"`;
@@ -1871,7 +2385,7 @@ gltfLoaderSwitch.load(
   function(gltf) {
   interruptor = gltf.scene;
   // En la pared del frente, centrado y a una altura cómoda
-  interruptor.position.set(ROOM.w/2 - 0.15, 1.5, ROOM.d/2 - 2);
+  interruptor.position.set(ROOM.w/2 - 0.25, 1.5, ROOM.d/2 - 2);
   interruptor.scale.set(3, 3, 3);
   // Rotar para que quede plano contra la pared del frente
   interruptor.rotation.y = Math.PI;
@@ -1891,6 +2405,9 @@ function animarInterruptor() {
   interruptorOn = !interruptorOn;
   // Ya no se rota el modelo ni la palanca
 }
+// Declaración anticipada para evitar errores de temporal-dead-zone cuando animate
+// intenta acceder a la variable antes de que el loader la inicialice.
+let copaAmericaModel = null;
 let last = performance.now();
 function animate(now){
   requestAnimationFrame(animate);
@@ -1901,6 +2418,7 @@ function animate(now){
     movePlayer(dt);
     updateAimLabel();
   }
+  // (removed legacy door animation)
 
   // Rotar el modelo Jabulani si está cargado
   if (jabulaniModel) {
@@ -1915,6 +2433,19 @@ function animate(now){
   // Rotar la Copa Libertadores si está cargada
   if (copaLibertadoresModel) {
     copaLibertadoresModel.rotation.y += dt * 0.25; // Rotación elegante y lenta para la Copa Libertadores
+  }
+
+  // Rotar la Copa América si está cargada (mismo comportamiento que la Copa Libertadores)
+  if (copaAmericaModel) {
+    copaAmericaModel.rotation.y += dt * 0.25; // Igual velocidad que la Copa Libertadores
+  }
+
+  // Rotación del escudo central (GLTF si está, si no rotar placeholder)
+  if (escudoModel) {
+    escudoModel.rotation.y += dt * 0.25;
+  } else if (escudoPlaceholder) {
+    // rotar suavemente el placeholder para dar vida mientras carga/si falla el GLTF
+    escudoPlaceholder.rotation.y += dt * 0.15;
   }
   
   // Efecto de luz en el objeto (siempre brillante)
@@ -1962,3 +2493,159 @@ function isInterruptorFocused() {
   const hits = raycaster.intersectObject(interruptor, true);
   return hits.length > 0;
 }
+
+// ====== Vitrina 4: Copa América (similar a la Copa Libertadores) ======
+const vitrina4Group = new THREE.Group();
+
+// Reusar dimensiones de vitrina3 para consistencia
+const vitrina4Width = vitrina3Width;
+const vitrina4Depth = vitrina3Depth;
+const vitrina4Height = vitrina3Height;
+
+// Base del pedestal
+const vitrina4Base = new THREE.Mesh(
+  new THREE.BoxGeometry(vitrina4Width + 0.1, 0.15, vitrina4Depth + 0.1),
+  new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.3, roughness: 0.7 })
+);
+vitrina4Base.position.y = 0.075;
+vitrina4Base.receiveShadow = true;
+vitrina4Base.castShadow = true;
+vitrina4Group.add(vitrina4Base);
+
+// Columna principal del pedestal
+const vitrina4Column = new THREE.Mesh(
+  new THREE.BoxGeometry(vitrina4Width, vitrina4Height, vitrina4Depth),
+  new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.4, roughness: 0.6 })
+);
+vitrina4Column.position.y = vitrina4Height / 2 + 0.15;
+vitrina4Column.receiveShadow = true;
+vitrina4Column.castShadow = true;
+vitrina4Group.add(vitrina4Column);
+
+// Superficie superior del pedestal
+const vitrina4Top = new THREE.Mesh(
+  new THREE.BoxGeometry(vitrina4Width + 0.05, 0.08, vitrina4Depth + 0.05),
+  new THREE.MeshStandardMaterial({ color: 0x404040, metalness: 0.5, roughness: 0.4 })
+);
+vitrina4Top.position.y = vitrina4Height + 0.15 + 0.04;
+vitrina4Top.receiveShadow = true;
+vitrina4Group.add(vitrina4Top);
+
+// Estructura de vidrio (misma que vitrina3)
+const vitrina4BaseY = vitrina4Height + 0.15 + 0.08;
+const vitrina4GlassHeight = vitrina3GlassHeight;
+
+const vitrina4Frontal = new THREE.Mesh(new THREE.BoxGeometry(0.65, vitrina4GlassHeight, 0.02), vidriaMaterial);
+vitrina4Frontal.position.set(0, vitrina4BaseY + vitrina4GlassHeight/2, 0.65/2);
+vitrina4Group.add(vitrina4Frontal);
+
+const vitrina4Trasera = new THREE.Mesh(new THREE.BoxGeometry(0.65, vitrina4GlassHeight, 0.02), vidriaMaterial);
+vitrina4Trasera.position.set(0, vitrina4BaseY + vitrina4GlassHeight/2, -0.65/2);
+vitrina4Group.add(vitrina4Trasera);
+
+const vitrina4Izquierda = new THREE.Mesh(new THREE.BoxGeometry(0.02, vitrina4GlassHeight, 0.65), vidriaMaterial);
+vitrina4Izquierda.position.set(-0.65/2, vitrina4BaseY + vitrina4GlassHeight/2, 0);
+vitrina4Group.add(vitrina4Izquierda);
+
+const vitrina4Derecha = new THREE.Mesh(new THREE.BoxGeometry(0.02, vitrina4GlassHeight, 0.65), vidriaMaterial);
+vitrina4Derecha.position.set(0.65/2, vitrina4BaseY + vitrina4GlassHeight/2, 0);
+vitrina4Group.add(vitrina4Derecha);
+
+const vitrina4Techo = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.02, 0.65), vidriaMaterial);
+vitrina4Techo.position.set(0, vitrina4BaseY + vitrina4GlassHeight, 0);
+vitrina4Group.add(vitrina4Techo);
+
+const marcoSuperior4 = new THREE.Mesh(new THREE.BoxGeometry(0.65 + 0.03*2, 0.03, 0.65 + 0.03*2), marcoMaterial);
+marcoSuperior4.position.set(0, vitrina4BaseY + vitrina4GlassHeight + 0.03/2, 0);
+vitrina4Group.add(marcoSuperior4);
+
+// Placa informativa
+const placa4 = createGoldenPlaque("COPA AMÉRICA", "Trofeo de la Copa América. Información editable por el usuario.");
+placa4.position.set(0.37, 0.9, 0);
+placa4.rotation.x = 0;
+placa4.rotation.y = -Math.PI / 2;
+placa4.rotation.z = Math.PI;
+vitrina4Group.add(placa4);
+interactables.push(placa4);
+
+// Replica exacta del pedestal interno y grupo de la vitrina 3 para la Copa América
+const copaAmerica4Group = new THREE.Group();
+const pedestalCopaAmerica = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.2, 0.2, 0.15, 32),
+  new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.4, roughness: 0.6 })
+);
+pedestalCopaAmerica.position.y = 0.075;
+pedestalCopaAmerica.castShadow = true;
+pedestalCopaAmerica.receiveShadow = true;
+copaAmerica4Group.add(pedestalCopaAmerica);
+
+// Cargar el modelo GLTF de la Copa América y añadirlo al grupo (misma escala/posición que la Libertadores)
+const gltfLoaderCopaAmerica = new GLTFLoader();
+console.log('🏆 Iniciando carga de la Copa América GLTF...');
+gltfLoaderCopaAmerica.load(
+  './assets/models/copa_america_trophy/scene.gltf',
+  function (gltf) {
+    copaAmericaModel = gltf.scene;
+    // Igual que copaLibertadores: escala pequeña y se eleva sobre el pedestal
+    copaAmericaModel.scale.set(0.25, 0.25, 0.25);
+    copaAmericaModel.position.set(0, 0.1605, 0);
+    // Mantener los materiales originales para preservar texturas de la Copa América.
+    // Solo activamos sombras y corregimos el colorSpace de los mapas si existen.
+    copaAmericaModel.traverse(function(node){
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        try {
+          const mat = node.material;
+          if (mat) {
+            if (Array.isArray(mat)) {
+              mat.forEach(m => { if (m && m.map) try { m.map.colorSpace = THREE.SRGBColorSpace; } catch(e){} });
+            } else {
+              if (mat.map) try { mat.map.colorSpace = THREE.SRGBColorSpace; } catch(e){}
+              if (mat.normalMap) try { mat.normalMap.colorSpace = THREE.LinearSRGBColorSpace; } catch(e){}
+            }
+          }
+        } catch(e) { console.warn('Error ajustando materiales copaAmerica:', e); }
+      }
+    });
+    copaAmerica4Group.add(copaAmericaModel);
+    console.log('🏆 Copa América cargada y posicionada (comportamiento replicado)');
+  },
+  undefined,
+  function (err) {
+    console.error('❌ Error cargando Copa América:', err);
+  }
+);
+
+// Posicionar el grupo de la Copa América dentro de la vitrina (igual que vitrina3)
+copaAmerica4Group.position.set(0, vitrina4BaseY, 0);
+vitrina4Group.add(copaAmerica4Group);
+
+// Luces para la vitrina (mismas configuraciones que vitrina3)
+const luzCopaAmerica = new THREE.SpotLight(0xffffff, 6.0, 10, Math.PI / 3, 0.1, 1);
+luzCopaAmerica.position.set(0, vitrina4BaseY + vitrina4GlassHeight + 1.5, 0);
+luzCopaAmerica.target.position.set(0, vitrina4BaseY + 0.2, 0);
+luzCopaAmerica.castShadow = true;
+vitrina4Group.add(luzCopaAmerica);
+vitrina4Group.add(luzCopaAmerica.target);
+
+let luzLateralCopa4 = new THREE.PointLight(0xffffff, 2.5, 4);
+luzLateralCopa4.position.set(0.3, vitrina4BaseY + vitrina4GlassHeight * 0.6, 0.3);
+vitrina4Group.add(luzLateralCopa4);
+
+let luzLateralCopa42 = new THREE.PointLight(0xffffff, 2.0, 4);
+luzLateralCopa42.position.set(-0.3, vitrina4BaseY + vitrina4GlassHeight * 0.6, -0.3);
+vitrina4Group.add(luzLateralCopa42);
+
+const luzAmbientalCopaAmerica = new THREE.AmbientLight(0xffffff, 0.4);
+vitrina4Group.add(luzAmbientalCopaAmerica);
+
+// Posicionar la nueva vitrina en el museo y agregar a la escena
+// Posicionar la nueva vitrina inmediatamente a la derecha de la vitrina 3 (Copa Libertadores)
+// Usamos el ancho de la vitrina + un pequeño padding para colocarlas juntas sin solaparse
+const vitrinaPadding = 0.15;
+vitrina4Group.position.set(-7.5, 0, -3);
+vitrina4Group.rotation.y = Math.PI;
+vitrina4Group.castShadow = true;
+vitrina4Group.receiveShadow = true;
+scene.add(vitrina4Group);
