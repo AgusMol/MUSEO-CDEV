@@ -71,7 +71,7 @@ console.log('🎬 Escena creada');
 
 // Cámara y renderer
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
-camera.position.set(0, 1.6, 10);
+camera.position.set(0, 1.6, 16);
 
 const renderer = new THREE.WebGLRenderer({ canvas: CANVAS, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -337,6 +337,192 @@ room.add(wallBack, wallFront, wallLeft, wallRight);
 scene.add(room);
 
 // (Removed legacy interactive door and its hidden reception)
+
+// ======== Rope Barriers GLTF (10 instancias) ========
+console.log('🚧 Cargando rope barriers...');
+
+const gltfLoaderRope = new GLTFLoader();
+
+// Variables globales para los 10 rope barriers
+let ropeBarriers = [];
+// Mantener compatibilidad con código existente
+let ropeBarrier = null;
+
+// === Posiciones y rotaciones de las 10 rope barriers ===
+// Puedes modificar estas posiciones y rotaciones para cada rope barrier individualmente
+// Rotación: x=pitch (inclinar adelante/atrás), y=yaw (girar izquierda/derecha), z=roll (inclinar lateralmente)
+// Ejemplos de rotación Y: 0=norte, Math.PI/2=este, Math.PI=sur, 3*Math.PI/2=oeste
+const ropeBarrierPositions = [
+  { x: -3, y: 0, z: 5, rotX: 0, rotY: 0, rotZ: 0 },                    // ROPE BARRIER 1 - Sin rotación
+  { x: 4, y: 0, z: 11, rotX: 0, rotY: Math.PI/2, rotZ: 0 },             // ROPE BARRIER 2 - Rotado 90° (apunta al este)
+  { x: -2, y: 0, z: -3, rotX: 0, rotY: 0, rotZ: 0 },                   // ROPE BARRIER 5 - Sin rotación
+  { x: -2, y: 0, z: 11, rotX: 0, rotY: 0, rotZ: 0 },                   // ROPE BARRIER 9 - Sin rotación
+  { x: 1, y: 0, z: 11, rotX: 0, rotY: 0, rotZ: 0 },                   // ROPE BARRIER 7 - Sin rotación
+  { x: 4, y: 0, z: 11, rotX: 0, rotY: 0, rotZ: 0 },                   // ROPE BARRIER 7 - Sin rotación
+  { x: -5, y: 0, z: 11, rotX: 0, rotY: 0, rotZ: 0 },                   // ROPE BARRIER 11 - Sin rotación
+  { x: -8, y: 0, z: 11, rotX: 0, rotY: Math.PI/2, rotZ: 0 },           // ROPE BARRIER 2 - Rotado 90° (apunta al este)
+  { x: -8, y: 0, z: 7, rotX: 0, rotY: Math.PI/2, rotZ: 0 },          // ROPE BARRIER 12 - Rotado 90° (apunta al este)                      
+];
+
+// Función para crear una rope barrier en una posición específica
+function createRopeBarrier(gltfScene, position, index) {
+  console.log(`✅ Creando rope barrier ${index + 1} en posición:`, position);
+  
+  // Clonar la escena del GLTF para crear una nueva instancia
+  const ropeBarrier = gltfScene.clone();
+  
+  // Debug: Imprimir información del modelo
+  console.log(`🔍 Rope barrier ${index + 1} cargada - Info del modelo:`, ropeBarrier);
+  console.log(`🔍 Children count:`, ropeBarrier.children.length);
+  
+  // FORZAR escala, posición y rotación muy específicas
+  ropeBarrier.position.set(position.x, position.y, position.z);
+  ropeBarrier.scale.set(0.01, 0.01, 0.01); // Escala MUY pequeña para empezar
+  ropeBarrier.rotation.set(position.rotX || 0, position.rotY || 0, position.rotZ || 0); // Aplicar rotación personalizada
+  
+  // Calcular bounding box DESPUÉS de escalar
+  ropeBarrier.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(ropeBarrier);
+  console.log(`📏 Bounding box del modelo ${index + 1} (después de escalar):`, box);
+  console.log(`📐 Min:`, box.min, `Max:`, box.max);
+  console.log(`📏 Tamaño del modelo ${index + 1} escalado:`, {
+    width: box.max.x - box.min.x,
+    height: box.max.y - box.min.y,
+    depth: box.max.z - box.min.z
+  });
+  
+  // Aplicar materiales MUY VISIBLES a todos los meshes
+  let meshCount = 0;
+  ropeBarrier.traverse((child) => {
+    console.log(`🔍 Procesando child en barrier ${index + 1}:`, child.type, child.name || 'Sin nombre');
+    
+    if (child.isMesh) {
+      meshCount++;
+      child.castShadow = true;
+      child.receiveShadow = true;
+      child.visible = true;
+      child.frustumCulled = false;
+      
+      // MANTENER material original con texturas controladas
+      if (child.material) {
+        // Clonar el material para evitar referencias compartidas
+        child.material = child.material.clone();
+        child.material.transparent = false;
+        child.material.opacity = 1.0;
+        child.material.visible = true;
+        child.material.needsUpdate = true;
+        
+        // Simplificar materiales problemáticos que causan errores de shader
+        if (child.material.name && (child.material.name.includes('Material__2') || child.material.name.includes('Material__3') || child.material.name.includes('Material__4'))) {
+          if (child.material.name.includes('Material__2')) {
+            console.log(`🔧 Simplificando material problemático Material__2 para barrier ${index + 1}:`, child.name);
+            child.material = new THREE.MeshStandardMaterial({
+              color: 0x8B0000, // Rojo oscuro para cuerdas VIP
+              roughness: 0.7,
+              metalness: 0.0,
+              emissive: 0x220000 // Brillo sutil rojo
+            });
+          } else if (child.material.name.includes('Material__3')) {
+            console.log(`🔧 Simplificando material problemático Material__3 para barrier ${index + 1}:`, child.name);
+            child.material = new THREE.MeshStandardMaterial({
+              color: 0x2C2C2C, // Gris muy oscuro para postes metálicos
+              roughness: 0.2,
+              metalness: 0.9,
+              emissive: 0x111111 // Brillo metálico sutil
+            });
+          } else if (child.material.name.includes('Material__4')) {
+            console.log(`🔧 Simplificando material problemático Material__4 para barrier ${index + 1}:`, child.name);
+            child.material = new THREE.MeshStandardMaterial({
+              color: 0xFFD700, // Dorado para partes metálicas brillantes
+              roughness: 0.1,
+                metalness: 0.95,
+                emissive: 0x332200 // Brillo dorado sutil
+              });
+            }
+          } else {
+            // Preservar otros materiales originales
+            console.log('🎨 Material preservado:', child.material.name || 'Sin nombre', 'con texturas:', !!child.material.map);
+          }
+        }
+        
+        console.log(`✅ Material original preservado para mesh ${meshCount}:`, child.name || `Mesh_${meshCount}`);
+        
+        if (child.geometry) {
+          child.geometry.computeBoundingBox();
+          child.geometry.computeBoundingSphere();
+          console.log('📐 Geometría - vertices:', child.geometry.attributes.position?.count || 'N/A');
+        }
+      } else if (child.isGroup || child.isObject3D) {
+        child.visible = true;
+        console.log(`🔶 Grupo/Object3D encontrado:`, child.name || 'Sin nombre');
+      }
+    });
+    
+    console.log(`📊 Total de meshes procesados: ${meshCount}`);
+    
+    // FORZAR visibilidad del objeto raíz
+    ropeBarrier.visible = true;
+    ropeBarrier.frustumCulled = false;
+    ropeBarrier.matrixAutoUpdate = true;
+    
+    // Forzar actualización de matrices
+    ropeBarrier.updateMatrix();
+    ropeBarrier.updateMatrixWorld(true);
+    
+    // Agregar a la escena
+    scene.add(ropeBarrier);
+    
+    // Agregar al array global
+    ropeBarriers.push(ropeBarrier);
+    
+    console.log(`✅ VIP rope barrier ${index + 1} agregada al museo en posición (${position.x}, ${position.y}, ${position.z}) con rotación (${position.rotX || 0}, ${position.rotY || 0}, ${position.rotZ || 0})`);
+    
+    return ropeBarrier;
+  }
+
+  gltfLoaderRope.load(
+    './assets/models/vip_rope_barrier/scene.gltf',
+    function(gltf) {
+      console.log('✅ Rope barrier GLTF base cargado exitosamente');
+      
+      // Crear las 10 instancias de rope barriers
+      ropeBarrierPositions.forEach((position, index) => {
+        createRopeBarrier(gltf.scene, position, index);
+      });
+      
+      console.log(`✅ Todas las ${ropeBarrierPositions.length} rope barriers han sido creadas exitosamente`);
+      
+      // Asignar la primera rope barrier a la variable global para compatibilidad
+      if (ropeBarriers.length > 0) {
+        ropeBarrier = ropeBarriers[0];
+      }
+    },
+  function(progress) {
+    const percent = (progress.loaded / progress.total * 100).toFixed(1);
+    console.log(`� Cargando rope barrier: ${percent}%`);
+  },
+  function(error) {
+    console.error('❌ Error cargando rope barriers:', error);
+    
+    // Crear barreras simples de emergencia
+    ropeBarrierPositions.forEach((position, index) => {
+      const emergencyBarrier = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 1, 0.2),
+        new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+      );
+      emergencyBarrier.position.set(position.x, position.y + 0.5, position.z);
+      emergencyBarrier.rotation.set(position.rotX || 0, position.rotY || 0, position.rotZ || 0);
+      scene.add(emergencyBarrier);
+      ropeBarriers.push(emergencyBarrier);
+      console.log(`🚨 Barrera de emergencia ${index + 1} creada en posición (${position.x}, ${position.y}, ${position.z}) con rotación (${position.rotX || 0}, ${position.rotY || 0}, ${position.rotZ || 0})`);
+    });
+    
+    // Asignar la primera barrera de emergencia a la variable global para compatibilidad
+    if (ropeBarriers.length > 0) {
+      ropeBarrier = ropeBarriers[0];
+    }
+  }
+);
 
 
 // ======== Escalera Central y Segunda Planta ========
@@ -1030,15 +1216,13 @@ vitrina1Top.position.y = vitrina1Height + 0.15 + 0.04;
 vitrina1Top.receiveShadow = true;
 vitrinaGroup.add(vitrina1Top);
 
-// Material de vidrio
-const vidriaMaterial = new THREE.MeshPhysicalMaterial({ 
+// Material de vidrio simplificado
+const vidriaMaterial = new THREE.MeshStandardMaterial({ 
   color: 0xffffff,
   transparent: true, 
   opacity: 0.1, 
   metalness: 0.0, 
-  roughness: 0.0,
-  transmission: 0.9,
-  thickness: 0.1
+  roughness: 0.0
 });
 
 // Marco de metal
@@ -1796,7 +1980,7 @@ vitrinaTallGroup.add(innerPlatform);
 const escudoGroup = new THREE.Group();
 const escudoPedestal = new THREE.Mesh(
   new THREE.CylinderGeometry(0.45, 0.45, 0.12, 32),
-  new THREE.MeshStandardMaterial({ color: 0x141414, metalness: 0.4, roughness: 0.6 })
+  new THREE.MeshStandardMaterial({ color: 0x8B7355, metalness: 0.3, roughness: 0.7 })
 );
 escudoPedestal.position.y = 0.06;
 escudoPedestal.castShadow = true;
@@ -1905,38 +2089,35 @@ console.log('✅ Vitrina cilíndrica alta agregada al centro del salón');
 
 // Sistema de colisiones para todas las vitrinas
 function checkVitrinaCollision(newPos) {
-  const playerRadius = 0.15; // antes 0.5
+  const playerRadius = 0.08; // más chico
   
-  // Vitrina 1 (Jabulani)
-  const vitrina1Pos = vitrinaGroup.position;
-  const vitrina1Size = { x: 0.7, z: 0.7 }; // colisión vitrina 1
-  
-  const dx1 = Math.abs(newPos.x - vitrina1Pos.x);
-  const dz1 = Math.abs(newPos.z - vitrina1Pos.z);
-  
-  if (dx1 < (vitrina1Size.x / 2 + playerRadius) && dz1 < (vitrina1Size.z / 2 + playerRadius)) {
-    return true;
-  }
-  // Vitrina 2 (Trofeo Copa del Mundo) - ahora igual que vitrina 1
-  const vitrina2Pos = vitrina2Group.position;
-  const vitrina2Size = { x: 0.7, z: 0.7 }; // colisión vitrina 2
-
-  const dx2 = Math.abs(newPos.x - vitrina2Pos.x);
-  const dz2 = Math.abs(newPos.z - vitrina2Pos.z);
-
-  if (dx2 < (vitrina2Size.x / 2 + playerRadius) && dz2 < (vitrina2Size.z / 2 + playerRadius)) {
-    return true;
-  }
-
-  // Vitrina 3 (Copa Libertadores 2021) - Centro del museo
-  const vitrina3Pos = vitrina3Group.position;
-  const vitrina3Size = { x: 0.7, z: 0.7 }; // colisión vitrina 3
-
-  const dx3 = Math.abs(newPos.x - vitrina3Pos.x);
-  const dz3 = Math.abs(newPos.z - vitrina3Pos.z);
-
-  if (dx3 < (vitrina3Size.x / 2 + playerRadius) && dz3 < (vitrina3Size.z / 2 + playerRadius)) {
-    return true;
+  // Solo colisionar con vitrinas si el jugador está en la planta baja
+  // (no en el balcón/pasarela)
+  if (newPos.y < finalBalconyHeight - 0.2) {
+    // Vitrina 1 (Jabulani)
+    const vitrina1Pos = vitrinaGroup.position;
+    const vitrina1Size = { x: 0.7, z: 0.7 };
+    const dx1 = Math.abs(newPos.x - vitrina1Pos.x);
+    const dz1 = Math.abs(newPos.z - vitrina1Pos.z);
+    if (dx1 < (vitrina1Size.x / 2 + playerRadius) && dz1 < (vitrina1Size.z / 2 + playerRadius)) {
+      return true;
+    }
+    // Vitrina 2 (Trofeo Copa del Mundo)
+    const vitrina2Pos = vitrina2Group.position;
+    const vitrina2Size = { x: 0.7, z: 0.7 };
+    const dx2 = Math.abs(newPos.x - vitrina2Pos.x);
+    const dz2 = Math.abs(newPos.z - vitrina2Pos.z);
+    if (dx2 < (vitrina2Size.x / 2 + playerRadius) && dz2 < (vitrina2Size.z / 2 + playerRadius)) {
+      return true;
+    }
+    // Vitrina 3 (Copa Libertadores 2021)
+    const vitrina3Pos = vitrina3Group.position;
+    const vitrina3Size = { x: 0.7, z: 0.7 };
+    const dx3 = Math.abs(newPos.x - vitrina3Pos.x);
+    const dz3 = Math.abs(newPos.z - vitrina3Pos.z);
+    if (dx3 < (vitrina3Size.x / 2 + playerRadius) && dz3 < (vitrina3Size.z / 2 + playerRadius)) {
+      return true;
+    }
   }
 
   // Vitrina central cilíndrica (suelo-techo)
@@ -2027,6 +2208,75 @@ function checkRailingCollision(newPos) {
   return false;
 }
 
+// Sistema de colisión para todos los rope barriers
+function checkRopeBarrierCollision(newPos) {
+  const playerRadius = 0.08;
+  
+  // Verificar que hay rope barriers cargadas
+  if (!ropeBarriers || ropeBarriers.length === 0) {
+    return false; // No hay rope barriers cargadas
+  }
+  
+  // Solo colisionar en la planta baja
+  if (newPos.y < finalBalconyHeight - 0.2) {
+    
+    // Verificar colisión con cada rope barrier
+    for (let i = 0; i < ropeBarriers.length; i++) {
+      const currentBarrier = ropeBarriers[i];
+      
+      if (!currentBarrier) continue;
+      
+      // Obtener la posición real de esta rope barrier después de todas las transformaciones
+      currentBarrier.updateMatrixWorld(true);
+      
+      // Calcular el bounding box en el espacio mundial
+      const boundingBox = new THREE.Box3().setFromObject(currentBarrier);
+      const center = boundingBox.getCenter(new THREE.Vector3());
+      const size = boundingBox.getSize(new THREE.Vector3());
+      
+      // Usar el centro del bounding box como posición real
+      const ropePos = {
+        x: center.x,
+        y: center.y, 
+        z: center.z
+      };
+      
+      // Usar las dimensiones reales del bounding box (escaladas)
+      const ropeSize = { 
+        x: Math.max(size.x, 0.5), // Al menos 50cm de ancho
+        z: Math.max(size.z, 0.3)  // Al menos 30cm de profundidad
+      };
+      
+      const dx = Math.abs(newPos.x - ropePos.x);
+      const dz = Math.abs(newPos.z - ropePos.z);
+      
+      // Debug console.log para ver qué está pasando (solo para la primera barrera para no saturar)
+      if (i === 0) {
+        console.log('=== ROPE BARRIERS COLLISION DEBUG ===');
+        console.log(`Checking ${ropeBarriers.length} rope barriers`);
+        console.log('Player Y:', newPos.y, 'Balcony height:', finalBalconyHeight);
+        console.log('Player pos:', newPos.x.toFixed(2), newPos.z.toFixed(2));
+        console.log(`Barrier ${i + 1} center pos:`, ropePos.x.toFixed(2), ropePos.z.toFixed(2));
+        console.log(`Barrier ${i + 1} bounding box size:`, size.x.toFixed(4), 'x', size.z.toFixed(4));
+        console.log(`Barrier ${i + 1} used collision size:`, ropeSize.x.toFixed(2), 'x', ropeSize.z.toFixed(2));
+        console.log(`Barrier ${i + 1} Delta X:`, dx.toFixed(2), 'Delta Z:', dz.toFixed(2));
+        console.log(`Barrier ${i + 1} X threshold:`, (ropeSize.x / 2 + playerRadius).toFixed(2));
+        console.log(`Barrier ${i + 1} Z threshold:`, (ropeSize.z / 2 + playerRadius).toFixed(2));
+      }
+      
+      if (dx < (ropeSize.x / 2 + playerRadius) && dz < (ropeSize.z / 2 + playerRadius)) {
+        console.log(`>>> COLLISION DETECTED WITH BARRIER ${i + 1}! <<<`);
+        return true; // Colisión detectada con esta barrera
+      }
+    }
+    
+    // Si llegamos aquí, no hubo colisión con ninguna barrera
+    console.log('No collision with any barrier');
+    console.log('=====================================');
+  }
+  
+  return false; // Sin colisión
+}
 // ======== Controles ========
 const help = document.getElementById('help');
 const label = document.getElementById('label');
@@ -2145,7 +2395,36 @@ document.addEventListener('keyup', (e)=>{
   if (e.code==='KeyD') move.r = false;
   if (e.code==='Space') move.up = false;
   if (e.code==='ShiftLeft') move.run = false;
-  if (e.code === 'KeyQ') crouching = false;
+  if (e.code === 'KeyQ') {
+    crouching = false;
+    // Si está sobre el balcón y la cámara está por debajo de la altura mínima, subirla
+    const balconyHeight = finalBalconyHeight;
+    const onBalcony = (
+      // Balcón frontal
+      Math.abs(camera.position.x) <= ROOM.w/2 && 
+      camera.position.z >= ROOM.d/2 - balconyWidth && camera.position.z <= ROOM.d/2
+    ) || (
+      // Balcón trasero
+      Math.abs(camera.position.x) <= ROOM.w/2 && 
+      camera.position.z >= -ROOM.d/2 && camera.position.z <= -ROOM.d/2 + balconyWidth
+    ) || (
+      // Balcón izquierdo
+      camera.position.x >= -ROOM.w/2 && camera.position.x <= -ROOM.w/2 + balconyWidth && 
+      Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
+    ) || (
+      // Balcón derecho
+      camera.position.x >= ROOM.w/2 - balconyWidth && camera.position.x <= ROOM.w/2 && 
+      Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
+    );
+    if (onBalcony) {
+      const minBalconyY = balconyHeight + STAND_HEIGHT;
+      if (camera.position.y < minBalconyY) {
+        camera.position.y = minBalconyY;
+        vy = 0;
+        onFloor = true;
+      }
+    }
+  }
 });
 
 // Scroll del mouse para cambiar slots de hotbar
@@ -2191,8 +2470,8 @@ function movePlayer(dt){
   newPosition.addScaledVector(forward, direction.z * speed * dt);
   newPosition.addScaledVector(right,   direction.x * speed * dt);
 
-  // Verificar colisión con la vitrina y las barandas
-  if (!checkVitrinaCollision(newPosition) && !checkRailingCollision(newPosition)) {
+  // Verificar colisión con la vitrina, las barandas y el rope barrier
+  if (!checkVitrinaCollision(newPosition) && !checkRailingCollision(newPosition) && !checkRopeBarrierCollision(newPosition)) {
     camera.position.copy(newPosition);
   }
 
@@ -2283,6 +2562,35 @@ function movePlayer(dt){
     camera.position.y = targetHeight;
     vy = 0;
     onFloor = true;
+  }
+
+  // Verificación robusta: si está en el área del balcón y agachado, nunca dejar caer por debajo del piso del balcón
+  const balconyHeight = finalBalconyHeight;
+  // Definir si el jugador está sobre el balcón (frontal, trasero, izquierdo o derecho)
+  const onBalcony = (
+    // Balcón frontal
+    Math.abs(camera.position.x) <= ROOM.w/2 && 
+    camera.position.z >= ROOM.d/2 - balconyWidth && camera.position.z <= ROOM.d/2
+  ) || (
+    // Balcón trasero
+    Math.abs(camera.position.x) <= ROOM.w/2 && 
+    camera.position.z >= -ROOM.d/2 && camera.position.z <= -ROOM.d/2 + balconyWidth
+  ) || (
+    // Balcón izquierdo
+    camera.position.x >= -ROOM.w/2 && camera.position.x <= -ROOM.w/2 + balconyWidth && 
+    Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
+  ) || (
+    // Balcón derecho
+    camera.position.x >= ROOM.w/2 - balconyWidth && camera.position.x <= ROOM.w/2 && 
+    Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
+  );
+  if (crouching && onBalcony) {
+    const minBalconyY = balconyHeight + CROUCH_HEIGHT;
+    if (camera.position.y < minBalconyY) {
+      camera.position.y = minBalconyY;
+      vy = 0;
+      onFloor = true;
+    }
   }
 
 
@@ -2383,14 +2691,31 @@ let interruptorOn = true;
 gltfLoaderSwitch.load(
   './assets/models/light_switch/scene.gltf',
   function(gltf) {
-  interruptor = gltf.scene;
-  // En la pared del frente, centrado y a una altura cómoda
-  interruptor.position.set(ROOM.w/2 - 0.25, 1.5, ROOM.d/2 - 2);
-  interruptor.scale.set(3, 3, 3);
-  // Rotar para que quede plano contra la pared del frente
-  interruptor.rotation.y = Math.PI;
-  interruptor.rotation.z = 0;
-  scene.add(interruptor);
+    interruptor = gltf.scene;
+    // En la pared del frente, centrado y a una altura cómoda
+    interruptor.position.set(ROOM.w/2 - 0.25, 1.5, ROOM.d/2 - 2);
+    interruptor.scale.set(3, 3, 3);
+    // Rotar para que quede plano contra la pared del frente
+    interruptor.rotation.y = Math.PI;
+    interruptor.rotation.z = 0;
+    
+    // Simplificar materiales para evitar error de shader
+    interruptor.traverse(function(child) {
+      if (child.isMesh) {
+        // Crear un material simple que no exceda el límite de texturas
+        const simpleMaterial = new THREE.MeshStandardMaterial({
+          color: 0xf0f0f0,
+          metalness: 0.1,
+          roughness: 0.7
+        });
+        child.material = simpleMaterial;
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    
+    scene.add(interruptor);
+    console.log('✅ Interruptor GLTF cargado con materiales simplificados');
   },
   undefined,
   function(error) {
