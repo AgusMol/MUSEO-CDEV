@@ -1,4 +1,5 @@
 // ======== Config básica ========
+import { createYouTubeBgm } from './bgm/youtubeBgm.js'; // para música de fondo
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 console.log('🚀 Iniciando museo virtual...');
@@ -2974,3 +2975,23 @@ vitrina4Group.rotation.y = Math.PI;
 vitrina4Group.castShadow = true;
 vitrina4Group.receiveShadow = true;
 scene.add(vitrina4Group);
+
+// Crear el controlador (tu video de 1 hora)
+const bgm = createYouTubeBgm({
+  videoId: '8Gk-lP0JtjQ',  // <-- este es el link que pasaste
+  volume: 25,              // 0..100
+  size: 'micro',           // 1x1 px visible
+});
+
+const canvas = document.getElementById('miCanvas');
+canvas.addEventListener('click', () => {
+  // acá ya hacés pointer-lock si corresponde
+  bgm.start();             // inicia la música
+}, { once: true });
+
+// Atajos opcionales
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyM') bgm.mute();
+  if (e.code === 'Equal' || e.code === 'ArrowUp') bgm.setVolume( Math.min(100, 35) );
+  if (e.code === 'Minus' || e.code === 'ArrowDown') bgm.setVolume( Math.max(0, 15) );
+});
