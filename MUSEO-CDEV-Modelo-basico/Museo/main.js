@@ -3,13 +3,16 @@ import { createYouTubeBgm } from './bgm/youtubeBgm.js'; // para música de fondo
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo } from './src/objects/vitrinas.js';
-import { addFrame } from './src/objects/frames.js';
+// addFrame ahora es usado internamente por módulos; no se importa aquí
 import { createGoldenPlaque } from './src/ui/plaques.js';
 import { initControls, getMoveState, isCrouching, setCrouching, isPointerLocked } from './src/controls/input.js';
 import { initHotbar, setHotbarSlot, scrollHotbar, updateHotbar } from './src/ui/hotbar.js';
 import { initRaycast, tryOpenInfo, updateAimLabel, getRaycaster } from './src/ui/raycastInfo.js';
 import { initLightSwitch, getLightSwitchModel, toggleLightSwitch } from './src/objects/lightSwitch.js';
 import { initRopeBarriers, checkRopeBarrierCollision as checkRopeBarrierCollisionModule } from './src/objects/ropeBarriers.js';
+import { ropeBarrierPositions } from './src/objects/ropeBarrierLayout.js';
+import { placeArtworks } from './src/objects/artworks.js';
+import { initMovement } from './src/controls/movement.js';
 import { createSecondFloor } from './src/world/secondFloor.js';
 import { initCollisionSystem } from './src/physics/collisions.js';
 import { initLightingSystem, createCeiling } from './src/world/lighting.js';
@@ -206,43 +209,11 @@ const { group: smallRoom } = createSmallRoom(scene, ROOM, wallMat, floorMaterial
 
 // (Removed legacy interactive door and its hidden reception)
 
-// ======== Rope Barriers (10 instancias modularizadas) ========
+// ======== Rope Barriers (layout modular) ========
 console.log('🚧 Cargando rope barriers...');
-
-// Posiciones y rotaciones de las rope barriers
-const ropeBarrierPositions = [
-  { x: 0.3, y: 0, z: 16.1, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, // Primera barrera cerca de recepción
-  { x: 0.97, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Segunda barrera cerca de recepción
-  { x: -1.9, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Tercera barrera cerca de recepción
-  { x: -4.8, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, //Cuarta barrera cerca de recepción
-  { x: -7.76, y: 0, z: 12.6, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Quinta barrera sigue orden de izquierda a derecha desde donde arrancas
-  { x: -7.76, y: 0, z: 9.8, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Sexta barrera atrás de las vitrinas
-  { x: -7.76, y: 0, z: 7, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Septima barrera atrás de las vitrinas
-  { x: -7.76, y: 0, z: 4.2, rotX: 0, rotY: Math.PI/2, rotZ: 0 },  //Octava barrera atrás de las vitrinas
-  { x: -7.76, y: 0, z: 1.4, rotX: 0, rotY: Math.PI/2, rotZ: 0 },  //Novena barrera (continuación hacia el fondo)
-  { x: -7.76, y: 0, z: -1.4, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Décima barrera
-  { x: -7.76, y: 0, z: -4.2, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Undécima barrera
-  { x: -7.76, y: 0, z: -7.0, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Duodécima barrera
-  { x: -7.76, y: 0, z: -9.8, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Décimo tercera barrera
-  { x: -4.85, y: 0, z: -13.3, rotX: 0, rotY: 0, rotZ: 0 },//Décimo cuarta barrera (antes de la escalera)
-  { x: -2, y: 0, z: -13.3, rotX: 0, rotY: 0, rotZ: 0 },//Décimo quinta barrera (antes de la escalera)
-  { x: 0.8, y: 0, z: -13.3, rotX: 0, rotY: 0, rotZ: 0 }, //Barrera abajo de la escalera
-  { x: 3.7, y: 0, z: -13.3, rotX: 0, rotY: 0, rotZ: 0 }, //Primera barrera pasando escalera
-  { x: 3.6, y: 0, z: -10.37, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Segunda barrera pasando escalera
-  { x: 3.6, y: 0, z: -7.57, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Continuación hacia el frente
-  { x: 3.6, y: 0, z: -4.77, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-  { x: 3.6, y: 0, z: -1.97, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-  { x: 3.6, y: 0, z: 0.83, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-  { x: 3.6, y: 0, z: 3.63, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-  { x: 3.6, y: 0, z: 6.43, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-  { x: 3.6, y: 0, z: 9.23, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-  { x: 3.6, y: 0, z: 12.03, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-];
-
-// Inicializar rope barriers con el módulo
 initRopeBarriers(scene, ropeBarrierPositions);
 
-// ======== Obras / marcos ========
+// ======== Obras / marcos (modular) ========
 const interactables = [];
 // Si durante la ejecución temprana añadimos objetos antes de que 'interactables' existiera,
 // los guardamos en window.__pendingInteractables. Ahora los vaciamos.
@@ -250,129 +221,8 @@ if (window.__pendingInteractables && Array.isArray(window.__pendingInteractables
   window.__pendingInteractables.forEach(obj => { try { interactables.push(obj); } catch(e){} });
   window.__pendingInteractables = [];
 }
-
-
-
-// IMPORTANTE: NO TOCAR ORDEN DEL ARRAY, SEGUIR EL ORDEN QUE DICEN LOS COMENTARIOS POR QUE SE ROMPE TODO EL ORDEN SINO
-
-const availableImageFiles = [
-  './assets/images/1978_2.jpg', // Primer cuadro
-  './assets/images/1978.jpg', // Segundo cuadro
-  './assets/images/8.jpeg', // Octavo cuadro
-  './assets/images/7.jpeg', // Séptimo cuadro
-  './assets/images/6.jpeg', // Sexto cuadro
-  './assets/images/1990.jpg', // Quinto cuadro
-  './assets/images/1986.jpg', // Cuarto cuadro
-    './assets/images/Maradona_copa_del_mundo.png', //Tercer cuadro
-  './assets/images/9.jpeg', // Noveno cuadro
-  './assets/images/10.jpeg', // Décimo cuadro
-  './assets/images/11.png', // Undécimo cuadro
-  './assets/images/12.jpeg', // Duodécimo cuadro
-  './assets/images/13.jpeg', // Decimotercero cuadro
-  './assets/images/14.jpeg', // Decimocuarto cuadro
-  './assets/images/15.png', // Decimoquinto cuadro
-  './assets/images/16.jpeg', // Decimosexto cuadro
-  './assets/images/17.jpeg', // Decimoséptimo cuadro
-  './assets/images/2008.jpg', // Decimoctavo cuadro
-  './assets/images/Messi_copa_america_2024.png', // Vigésimo cuadro
-  './assets/images/Messi_copa_del_mundo_2022.png' // Decimonoveno cuadro
-];
-
-function buildObrasCatalog(count) {
-  const catalog = [];
-  for (let i = 0; i < count; i++) {
-    const src = availableImageFiles[i % availableImageFiles.length];
-    catalog.push({
-      img: src,
-      title: `Obra ${i + 1}`,
-      author: '',
-      year: '',
-      desc: ''
-    });
-  }
-  return catalog;
-}
-
-// Queremos cubrir 20 posiciones (4 paredes x 5 obras)
-const obrasCatalogo = buildObrasCatalog(20);
-
-// Función auxiliar para obtener obra por índice
-function getObra(index) {
-  return obrasCatalogo[index % obrasCatalogo.length];
-}
-
-// ======== Distribución de Obras por Paredes ========
-
-// Pared del frente (INICIO) - Primera sección (INICIO DEL RECORRIDO)
-const posicionesFrente = [-4, -8];
-posicionesFrente.forEach((x, index) => {
-  const obra = getObra(index); // Comienza en índice 0: 1978.jpg, 1978_2.jpg
-  addFrame(scene, interactables, { 
-    x: x, 
-    z: ROOM.d/2 - 0.18, 
-    face: "frontinicial", 
-    img: obra.img, 
-    title: obra.title, 
-    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
-  });
-});
-
-// Pared izquierda (left) - 6 obras
-const posicionesIzquierda = [-12, -8, -4, 0, 4, 8];
-posicionesIzquierda.forEach((z, index) => {
-  const obra = getObra(index + 2); // Continúa después de front (2 obras): empieza en índice 2
-  addFrame(scene, interactables, { 
-    x: -ROOM.w/2 + 0.18, 
-    z: z, 
-    face: "left",  
-    img: obra.img, 
-    title: obra.title,  
-    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
-  });
-});
-
-// Pared del fondo (back) - 5 obras (FONDO DETRÁS DE ESCALERA)
-const posicionesFondo = [-8, -4, 0, 4, 8];
-posicionesFondo.forEach((x, index) => {
-  const obra = getObra(index + 8); // Continúa después de derecha
-  addFrame(scene, interactables, { 
-    x: x, 
-    z: -ROOM.d/2 + 0.18, 
-    face: "back",  
-    img: obra.img, 
-    title: obra.title,  
-    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
-  });
-});
-
-
-// Pared derecha (right) - 5 obras (sigue despues de escalera)
-const posicionesDerecha = [-8, -4, 0, 4, 8];
-posicionesDerecha.forEach((z, index) => {
-  const obra = getObra(index + 13);
-  addFrame(scene, interactables, { 
-    x: ROOM.w/2 - 0.18, 
-    z: z, 
-    face: "right", 
-    img: obra.img, 
-    title: obra.title, 
-    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
-  });
-});
-
-// Pared del frente (inicio) - fin del recorrido planta baja
-const posicionesFrente1 = [4, 8];
-posicionesFrente1.forEach((x, index) => {
-  const obra = getObra(index + 18);
-  addFrame(scene, interactables, { 
-    x: x, 
-    z: ROOM.d/2 - 0.18, 
-    face: "frontfinal", 
-    img: obra.img, 
-    title: obra.title, 
-    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
-  });
-});
+// Colocar obras de forma modular
+placeArtworks(scene, interactables, ROOM);
 
 
 // ======== Vitrina de Vidrio 1 (modular) ========
@@ -452,249 +302,25 @@ initControls(CANVAS, camera, {
   hotbarElement: hotbar
 });
 
-// Variables locales para lógica de movimiento
-const velocity = new THREE.Vector3();
-const direction = new THREE.Vector3();
+// Movimiento (modular)
+let movePlayer; // se inicializa más abajo con initMovement
 
-// Scroll del mouse para cambiar slots de hotbar (ya manejado por el módulo)
-document.addEventListener('wheel', (e) => {
-  if (!isPointerLocked()) return;
-  
-  e.preventDefault();
-  const direction = e.deltaY > 0 ? 1 : -1;
-  let newSlot = currentSlot + direction;
-  
-  // Wrap around: del 9 al 1 y del 1 al 9
-  if (newSlot > 9) newSlot = 1;
-  if (newSlot < 1) newSlot = 9;
-  
-  setHotbarSlot(newSlot);
-}, { passive: false });
+// El scroll del mouse para la hotbar ya lo maneja el módulo de controles (callback 'scroll').
 
-// Movimiento
-const GRAVITY = 18, JUMP = 5;
-let onFloor = true;
-let vy = 0;
-
-const STAND_HEIGHT = 1.6;
-const CROUCH_HEIGHT = 1.0;
-
-// Modificar la altura de la cámara en movePlayer
-function movePlayer(dt){
-  const move = getMoveState(); // Obtener estado del módulo de controles
-  const crouching = isCrouching();
-  
-  direction.set(0,0,0);
-  const speed = (move.run ? 6 : 3.2);
-
-  if (move.f) direction.z += 1;
-  if (move.b) direction.z -= 1;
-  if (move.l) direction.x -= 1;
-  if (move.r) direction.x += 1;
-  direction.normalize();
-
-  const forward = new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
-  const right   = new THREE.Vector3(1,0,0).applyEuler(camera.rotation);
-
-  // Calcular nueva posición
-  const newPosition = camera.position.clone();
-  newPosition.addScaledVector(forward, direction.z * speed * dt);
-  newPosition.addScaledVector(right,   direction.x * speed * dt);
-
-
-  // --- COLISIÓN DE PAREDES Y PUERTA (ROBUSTA Y SIMPLE) ---
-  let wallCollision = false;
-  const playerRadius = 0.18;
-  // Pared trasera
-  if (newPosition.z < -ROOM.d/2 + playerRadius) wallCollision = true;
-  // Pared izquierda
-  if (newPosition.x < -ROOM.w/2 + playerRadius) wallCollision = true;
-  // Pared derecha
-  if (newPosition.x >  ROOM.w/2 - playerRadius) wallCollision = true;
-
-  // Pared frontal: solo permite pasar si está en el hueco de la puerta (X y Y)
-  const wallZ = ROOM.d/2;
-  const doorMinX = DOOR.centerX - DOOR.width/2;
-  const doorMaxX = DOOR.centerX + DOOR.width/2;
-  const doorMinY = 0;
-  const doorMaxY = DOOR.height;
-  if (newPosition.z >= wallZ - playerRadius) {
-    // Si NO está en el hueco de la puerta, colisiona
-    if (!(newPosition.x > doorMinX && newPosition.x < doorMaxX && newPosition.y >= doorMinY && newPosition.y <= doorMaxY)) {
-      wallCollision = true;
-    }
-  }
-
-  // Verificar colisión con la vitrina, las barandas y el rope barrier
-  if (!wallCollision && !checkVitrinaCollision(newPosition) && !checkRailingCollision(newPosition) && !checkRopeBarrierCollision(newPosition)) {
-    camera.position.copy(newPosition);
-  }
-
-  // ======== Sistema de Escaleras ========
-  // Función para calcular la altura del suelo en la posición actual
-  function getFloorHeight(x, z) {
-    // Altura base del suelo
-    let floorHeight = 0;
-    const playerCurrentY = camera.position.y;
-    const basePlayerHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
-    
-    // Verificar si está en la escalera central (reposicionada más atrás)
-    const stairCenterX = 0;
-    const stairStartZ = stairOffset + stairLength/2;   // Ajustado con el offset
-    const stairEndZ = stairOffset - stairLength/2;     // Ajustado con el offset
-    
-    if (Math.abs(x - stairCenterX) <= stairWidth/2 + 0.5 && z <= stairStartZ && z >= stairEndZ) {
-      // Calcular en qué escalón está (invertido)
-      const stepIndex = Math.floor((stairStartZ - z) / stepDepth);
-      if (stepIndex >= 0 && stepIndex < totalSteps) {
-        const stepHeight_calculated = stepIndex * stepHeight;
-        // Solo aplicar si el jugador está POR ENCIMA de una altura mínima (no caminando por debajo)
-        const minHeightToApply = stepHeight_calculated - 0.5; // 0.5m por debajo del escalón
-        if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
-          floorHeight = stepHeight_calculated;
-        }
-      }
-    }
-    
-    // Plataforma superior eliminada - la escalera ahora conecta directamente con el balcón
-    
-    // Las escaleras laterales ahora son plataformas horizontales (detectadas en la sección de plataformas laterales más abajo)
-    
-    // Verificar si está en el balcón perimetral rediseñado (sin huecos)
-    const balconyHeight = finalBalconyHeight;
-    const minHeightToApply = balconyHeight - 0.5; // 0.5m por debajo del balcón
-    
-    // Balcón frontal completo (de pared a pared)
-    if (Math.abs(x) <= ROOM.w/2 && 
-        z >= ROOM.d/2 - balconyWidth && z <= ROOM.d/2) {
-      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
-        floorHeight = balconyHeight;
-      }
-    }
-    
-    // Balcón trasero completo (de pared a pared)
-    if (Math.abs(x) <= ROOM.w/2 && 
-        z >= -ROOM.d/2 && z <= -ROOM.d/2 + balconyWidth) {
-      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
-        floorHeight = balconyHeight;
-      }
-    }
-    
-    // Balcón izquierdo (conecta sin superposición)
-    if (x >= -ROOM.w/2 && x <= -ROOM.w/2 + balconyWidth && 
-        Math.abs(z) <= (ROOM.d - balconyWidth*2)/2) {
-      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
-        floorHeight = balconyHeight;
-      }
-    }
-    
-    // Balcón derecho (conecta sin superposición)
-    if (x >= ROOM.w/2 - balconyWidth && x <= ROOM.w/2 && 
-        Math.abs(z) <= (ROOM.d - balconyWidth*2)/2) {
-      if (playerCurrentY - basePlayerHeight >= minHeightToApply) {
-        floorHeight = balconyHeight;
-      }
-    }
-    
-    // Conector eliminado - la escalera ahora conecta directamente con el balcón exterior
-    
-    // Las plataformas de esquina ya no son necesarias con el nuevo diseño continuo
-    
-    return floorHeight;
-  }
-  
-  // Calcular altura del suelo en la posición actual del jugador
-  const currentFloorHeight = getFloorHeight(camera.position.x, camera.position.z);
-  const basePlayerHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
-  const targetHeight = currentFloorHeight + basePlayerHeight;
-  
-  // Salto
-  if (move.up && onFloor){ vy = JUMP; onFloor=false; }
-  vy -= GRAVITY * dt;
-  camera.position.y += vy * dt;
-  
-  if (camera.position.y <= targetHeight){
-    camera.position.y = targetHeight;
-    vy = 0;
-    onFloor = true;
-  }
-
-  // Verificación robusta: si está en el área del balcón y agachado, nunca dejar caer por debajo del piso del balcón
-  const balconyHeight = finalBalconyHeight;
-  // Definir si el jugador está sobre el balcón (frontal, trasero, izquierdo o derecho)
-  const onBalcony = (
-    // Balcón frontal
-    Math.abs(camera.position.x) <= ROOM.w/2 && 
-    camera.position.z >= ROOM.d/2 - balconyWidth && camera.position.z <= ROOM.d/2
-  ) || (
-    // Balcón trasero
-    Math.abs(camera.position.x) <= ROOM.w/2 && 
-    camera.position.z >= -ROOM.d/2 && camera.position.z <= -ROOM.d/2 + balconyWidth
-  ) || (
-    // Balcón izquierdo
-    camera.position.x >= -ROOM.w/2 && camera.position.x <= -ROOM.w/2 + balconyWidth && 
-    Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
-  ) || (
-    // Balcón derecho
-    camera.position.x >= ROOM.w/2 - balconyWidth && camera.position.x <= ROOM.w/2 && 
-    Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
-  );
-  if (crouching && onBalcony) {
-    const minBalconyY = balconyHeight + CROUCH_HEIGHT;
-    if (camera.position.y < minBalconyY) {
-      camera.position.y = minBalconyY;
-      vy = 0;
-      onFloor = true;
-    }
-  }
-
-
-
-  // Colisiones con paredes (sala principal + sala pequeña + puerta)
-  const margin = 0.5;
-  
-  // Límites base según la zona
-  let xMin, xMax, zMin, zMax;
-  
-  const inSmallRoom = camera.position.z > ROOM.d/2 + 0.3;
-  
-  if (inSmallRoom) {
-    // Dentro de la sala pequeña
-    xMin = -SMALL.w/2 + margin;
-    xMax =  SMALL.w/2 - margin;
-    zMin = ROOM.d/2 - margin;
-    zMax = ROOM.d/2 + SMALL.d - margin;
-  } else {
-    // En la sala principal
-    xMin = -ROOM.w/2 + margin;
-    xMax =  ROOM.w/2 - margin;
-    zMin = -ROOM.d/2 + margin;
-    zMax = ROOM.d/2 - margin;
-  }
-  
-  // Aplicar límites estándar
-  camera.position.x = Math.max(xMin, Math.min(xMax, camera.position.x));
-  camera.position.z = Math.max(zMin, Math.min(zMax, camera.position.z));
-  
-  // COLISIÓN ESPECIAL DE PUERTA: solo sacar colisión en el hueco
-  const doorMargin = 0.35;
-  const doorLeftEdge = DOOR.centerX - DOOR.width/2 + doorMargin;
-  const doorRightEdge = DOOR.centerX + DOOR.width/2 - doorMargin;
-  const doorTop = finalBalconyHeight - 0.05;
-  const doorBottom = 0.0;
-  const isWithinDoorHeight = camera.position.y >= doorBottom && camera.position.y <= doorTop;
-  const isAlignedWithDoor = camera.position.x >= doorLeftEdge && camera.position.x <= doorRightEdge;
-
-  // Si está en la franja de la pared frontal
-  if (camera.position.z > ROOM.d/2 - margin && camera.position.z < ROOM.d/2 + 0.7) {
-    // Si está en el hueco, no se aplica colisión (puede pasar)
-    if (!(isWithinDoorHeight && isAlignedWithDoor)) {
-      // Si NO está en el hueco de la puerta, bloquear el paso
-      if (camera.position.z > ROOM.d/2 - margin) {
-        camera.position.z = ROOM.d/2 - margin;
-      }
-    }
-  }
+// Inicializar movimiento modular con la lógica actual
+{
+  const stairGeom = { stairOffset, stairLength, stepDepth, stairWidth, stepHeight, totalSteps };
+  const checkers = { checkVitrinaCollision, checkRailingCollision, checkRopeBarrierCollision };
+  ({ movePlayer } = initMovement({
+    camera,
+    ROOM,
+    SMALL,
+    DOOR,
+    finalBalconyHeight,
+    balconyWidth,
+    stairGeom,
+    checkers
+  }));
 }
 
 // ======== Inicializar sistema de raycast ========
