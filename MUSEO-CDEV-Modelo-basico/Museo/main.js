@@ -250,17 +250,32 @@ if (window.__pendingInteractables && Array.isArray(window.__pendingInteractables
   window.__pendingInteractables.forEach(obj => { try { interactables.push(obj); } catch(e){} });
   window.__pendingInteractables = [];
 }
-// ======== Catálogo de Obras (generado dinámicamente a partir de assets/images) ========
-// Si hay pocas imágenes, se repiten para completar la distribución de la sala.
+
+
+
+// IMPORTANTE: NO TOCAR ORDEN DEL ARRAY, SEGUIR EL ORDEN QUE DICEN LOS COMENTARIOS POR QUE SE ROMPE TODO EL ORDEN SINO
+
 const availableImageFiles = [
-  './assets/images/1978.jpg',
-  './assets/images/1978_2.jpg',
-  './assets/images/1986.jpg',
-  './assets/images/Maradona_copa_del_mundo.png',
-  './assets/images/1990.jpg',
-  './assets/images/2008.jpg',
-  './assets/images/Messi_copa_america_2024.png',
-  './assets/images/Messi_copa_del_mundo_2022.png',
+  './assets/images/1978_2.jpg', // Primer cuadro
+  './assets/images/1978.jpg', // Segundo cuadro
+  './assets/images/8.jpeg', // Octavo cuadro
+  './assets/images/7.jpeg', // Séptimo cuadro
+  './assets/images/6.jpeg', // Sexto cuadro
+  './assets/images/1990.jpg', // Quinto cuadro
+  './assets/images/1986.jpg', // Cuarto cuadro
+    './assets/images/Maradona_copa_del_mundo.png', //Tercer cuadro
+  './assets/images/9.jpeg', // Noveno cuadro
+  './assets/images/10.jpeg', // Décimo cuadro
+  './assets/images/11.png', // Undécimo cuadro
+  './assets/images/12.jpeg', // Duodécimo cuadro
+  './assets/images/13.jpeg', // Decimotercero cuadro
+  './assets/images/14.jpeg', // Decimocuarto cuadro
+  './assets/images/15.png', // Decimoquinto cuadro
+  './assets/images/16.jpeg', // Decimosexto cuadro
+  './assets/images/17.jpeg', // Decimoséptimo cuadro
+  './assets/images/2008.jpg', // Decimoctavo cuadro
+  './assets/images/Messi_copa_america_2024.png', // Vigésimo cuadro
+  './assets/images/Messi_copa_del_mundo_2022.png' // Decimonoveno cuadro
 ];
 
 function buildObrasCatalog(count) {
@@ -288,38 +303,24 @@ function getObra(index) {
 
 // ======== Distribución de Obras por Paredes ========
 
-// Pared del fondo (back) - 5 obras
-const posicionesFondo = [-8, -4, 0, 4, 8];
-posicionesFondo.forEach((x, index) => {
-  const obra = getObra(index);
-  addFrame(scene, interactables, { 
-    x: x, 
-    z: -ROOM.d/2 + 0.18, 
-    face: "back",  
-    img: obra.img, 
-    title: obra.title,  
-    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
-  });
-});
-
-// Pared del frente (front) - 5 obras
-const posicionesFrente = [-8, -4, 4, 8];
+// Pared del frente (INICIO) - Primera sección (INICIO DEL RECORRIDO)
+const posicionesFrente = [-4, -8];
 posicionesFrente.forEach((x, index) => {
-  const obra = getObra(index + 5); // Siguiente grupo de obras
+  const obra = getObra(index); // Comienza en índice 0: 1978.jpg, 1978_2.jpg
   addFrame(scene, interactables, { 
     x: x, 
     z: ROOM.d/2 - 0.18, 
-    face: "front", 
+    face: "frontinicial", 
     img: obra.img, 
     title: obra.title, 
     desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
   });
 });
 
-// Pared izquierda (left) - 5 obras
+// Pared izquierda (left) - 6 obras
 const posicionesIzquierda = [-12, -8, -4, 0, 4, 8];
 posicionesIzquierda.forEach((z, index) => {
-  const obra = getObra(index + 10); // Siguiente grupo de obras
+  const obra = getObra(index + 2); // Continúa después de front (2 obras): empieza en índice 2
   addFrame(scene, interactables, { 
     x: -ROOM.w/2 + 0.18, 
     z: z, 
@@ -330,10 +331,25 @@ posicionesIzquierda.forEach((z, index) => {
   });
 });
 
-// Pared derecha (right) - 5 obras
+// Pared del fondo (back) - 5 obras (FONDO DETRÁS DE ESCALERA)
+const posicionesFondo = [-8, -4, 0, 4, 8];
+posicionesFondo.forEach((x, index) => {
+  const obra = getObra(index + 8); // Continúa después de derecha
+  addFrame(scene, interactables, { 
+    x: x, 
+    z: -ROOM.d/2 + 0.18, 
+    face: "back",  
+    img: obra.img, 
+    title: obra.title,  
+    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
+  });
+});
+
+
+// Pared derecha (right) - 5 obras (sigue despues de escalera)
 const posicionesDerecha = [-8, -4, 0, 4, 8];
 posicionesDerecha.forEach((z, index) => {
-  const obra = getObra(index + 15); // Siguiente grupo de obras
+  const obra = getObra(index + 13);
   addFrame(scene, interactables, { 
     x: ROOM.w/2 - 0.18, 
     z: z, 
@@ -343,6 +359,21 @@ posicionesDerecha.forEach((z, index) => {
     desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
   });
 });
+
+// Pared del frente (inicio) - fin del recorrido planta baja
+const posicionesFrente1 = [4, 8];
+posicionesFrente1.forEach((x, index) => {
+  const obra = getObra(index + 18);
+  addFrame(scene, interactables, { 
+    x: x, 
+    z: ROOM.d/2 - 0.18, 
+    face: "frontfinal", 
+    img: obra.img, 
+    title: obra.title, 
+    desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` 
+  });
+});
+
 
 // ======== Vitrina de Vidrio 1 (modular) ========
 const { group: vitrinaGroup, baseY: vitrina1BaseY, vitH: vitrinaHeight, jabulaniModelRef, luzObjeto } = createVitrina1(scene, interactables);
