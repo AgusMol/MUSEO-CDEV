@@ -12,7 +12,8 @@ import { initLightSwitch, getLightSwitchModel, toggleLightSwitch } from './src/o
 import { initRopeBarriers, checkRopeBarrierCollision as checkRopeBarrierCollisionModule } from './src/objects/ropeBarriers.js';
 import { createSecondFloor } from './src/world/secondFloor.js';
 import { initCollisionSystem } from './src/physics/collisions.js';
-import { initLightingSystem, createCeilingLamps, createCeiling, createReceptionRoom } from './src/world/lighting.js';
+import { initLightingSystem, createCeiling } from './src/world/lighting.js';
+import { createSmallRoom } from './src/world/smallRoom.js';
 console.log('🚀 Iniciando museo virtual...');
 const CANVAS = document.getElementById("miCanvas");
 console.log('📺 Canvas encontrado:', CANVAS);
@@ -82,8 +83,10 @@ scene.background = new THREE.Color(0x0e1116);
 console.log('🎬 Escena creada');
 
 // Cámara y renderer
+const ROOM = { w: 24, h: 10, d: 36 };
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
-camera.position.set(0, 1.6, 16);
+// Posición inicial: fondo de la sala pequeña
+camera.position.set(0, 1.6, ROOM.d/2 + 8 - 1.5); // centrado, altura normal, fondo de la sala pequeña
 
 const renderer = new THREE.WebGLRenderer({ canvas: CANVAS, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -96,7 +99,6 @@ scene.add(camera);
 console.log('📱 Cámara agregada a la escena');
 
 // ====== Sala del museo ======
-const ROOM = { w: 24, h: 10, d: 36 };
 const wallMat = new THREE.MeshStandardMaterial({ color: 0x5A6B3A, roughness: 0.8, metalness: 0.0 });
 const floorMat = new THREE.MeshStandardMaterial({ color: 0x1f2836, roughness: 1.0 });
 
@@ -134,11 +136,9 @@ room.add(mainFloor);
 // ======== Techo (modularizado) ========
 createCeiling(room, ROOM);
 
-// ======== Sala de Recepción (modularizada) ========
-createReceptionRoom(scene, ROOM, wallMat);
+// (Recepción removida a pedido: se elimina mostrador y cartel)
 
-// ======== Lámparas colgantes (modularizadas) ========
-createCeilingLamps(scene, ROOM, lamparasSpotLights, ENABLE_CEILING_LIGHTS);
+// (Lámparas colgantes eliminadas por rendimiento a pedido del usuario)
 
 
 // Paredes
@@ -146,12 +146,63 @@ function wall(w, h, d) {
   return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
 }
 const wallBack  = wall(ROOM.w, ROOM.h, 0.3); wallBack.position.set(0, ROOM.h/2, -ROOM.d/2);
-const wallFront = wall(ROOM.w, ROOM.h, 0.3); wallFront.position.set(0, ROOM.h/2,  ROOM.d/2);
 const wallLeft  = wall(0.3, ROOM.h, ROOM.d); wallLeft.position.set(-ROOM.w/2, ROOM.h/2, 0);
 const wallRight = wall(0.3, ROOM.h, ROOM.d); wallRight.position.set( ROOM.w/2, ROOM.h/2, 0);
-room.add(wallBack, wallFront, wallLeft, wallRight);
+room.add(wallBack, wallLeft, wallRight);
 
 scene.add(room);
+
+// ======== Escalera Central y Segunda Planta (modularizado) ========
+const { 
+  secondFloorGroup, 
+  finalBalconyHeight, 
+  balconyWidth, 
+  stairOffset, 
+  stairLength, 
+  stepDepth, 
+  stairWidth, 
+  stepHeight, 
+  totalSteps 
+} = createSecondFloor(scene, ROOM, lamparasSpotLights);
+
+// Abrimos un hueco de puerta en la pared frontal DESPUÉS de conocer finalBalconyHeight
+// La puerta va desde el suelo hasta el piso del balcón, arriba sigue siendo pared
+const DOOR = { width: 2.2, height: finalBalconyHeight, thickness: 0.3, centerX: 0 };
+const halfRoomW = ROOM.w / 2;
+const frontPanelW = halfRoomW - DOOR.width / 2;
+
+// Segmentos izquierdo y derecho de la pared frontal COMPLETOS (desde piso hasta techo)
+const wallFrontLeft  = wall(frontPanelW, ROOM.h, DOOR.thickness);
+wallFrontLeft.position.set(-halfRoomW + frontPanelW / 2, ROOM.h / 2, ROOM.d / 2);
+const wallFrontRight = wall(frontPanelW, ROOM.h, DOOR.thickness);
+wallFrontRight.position.set( halfRoomW - frontPanelW / 2, ROOM.h / 2, ROOM.d / 2);
+
+// Parte superior central: pared desde el piso del balcón hasta el techo
+const upperWallHeight = ROOM.h - finalBalconyHeight;
+const wallFrontUpper = wall(DOOR.width, upperWallHeight, DOOR.thickness);
+wallFrontUpper.position.set(DOOR.centerX, finalBalconyHeight + upperWallHeight/2, ROOM.d/2);
+
+// Marco de puerta: jambas que van desde el suelo hasta el piso del balcón
+const jambW = 0.15, lintelH = 0.30, lintelDepth = 0.4;
+const jambaIzq = wall(jambW, DOOR.height, DOOR.thickness);
+jambaIzq.position.set(DOOR.centerX - DOOR.width/2 + jambW/2, DOOR.height/2, ROOM.d/2);
+const jambaDer = wall(jambW, DOOR.height, DOOR.thickness);
+jambaDer.position.set(DOOR.centerX + DOOR.width/2 - jambW/2, DOOR.height/2, ROOM.d/2);
+
+// Dintel prominente a la altura del piso del balcón (mismo color que las paredes)
+const dintel = new THREE.Mesh(
+  new THREE.BoxGeometry(DOOR.width + jambW*2, lintelH, lintelDepth),
+  wallMat
+);
+dintel.position.set(DOOR.centerX, finalBalconyHeight - lintelH/2, ROOM.d/2);
+dintel.castShadow = true;
+dintel.receiveShadow = true;
+
+room.add(wallFrontLeft, wallFrontRight, wallFrontUpper, jambaIzq, jambaDer, dintel);
+
+// ======== Sala pequeña (modular) ========
+const SMALL = { w: 8, h: finalBalconyHeight, d: 8 };
+const { group: smallRoom } = createSmallRoom(scene, ROOM, wallMat, floorMaterial, { ...SMALL, doorHeight: finalBalconyHeight });
 
 // (Removed legacy interactive door and its hidden reception)
 
@@ -161,7 +212,7 @@ console.log('🚧 Cargando rope barriers...');
 // Posiciones y rotaciones de las rope barriers
 const ropeBarrierPositions = [
   { x: 0.3, y: 0, z: 16.1, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, // Primera barrera cerca de recepción
-  { x: 0.97, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Segunda barrera cerca de recepción
+  //{ x: 0.97, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Segunda barrera cerca de recepción
   { x: -1.9, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Tercera barrera cerca de recepción
   { x: -4.8, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, //Cuarta barrera cerca de recepción
   { x: -7.76, y: 0, z: 12.6, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Quinta barrera sigue orden de izquierda a derecha desde donde arrancas
@@ -191,20 +242,6 @@ const ropeBarrierPositions = [
 // Inicializar rope barriers con el módulo
 initRopeBarriers(scene, ropeBarrierPositions);
 
-
-// ======== Escalera Central y Segunda Planta (modularizado) ========
-const { 
-  secondFloorGroup, 
-  finalBalconyHeight, 
-  balconyWidth, 
-  stairOffset, 
-  stairLength, 
-  stepDepth, 
-  stairWidth, 
-  stepHeight, 
-  totalSteps 
-} = createSecondFloor(scene, ROOM, lamparasSpotLights);
-
 // ======== Obras / marcos ========
 const interactables = [];
 // Si durante la ejecución temprana añadimos objetos antes de que 'interactables' existiera,
@@ -216,9 +253,14 @@ if (window.__pendingInteractables && Array.isArray(window.__pendingInteractables
 // ======== Catálogo de Obras (generado dinámicamente a partir de assets/images) ========
 // Si hay pocas imágenes, se repiten para completar la distribución de la sala.
 const availableImageFiles = [
-  './assets/images/cafeteras.jpg',
-  './assets/images/colonCampeon.jpg',
-  './assets/images/Maradona_copa_del_mundo.png'
+  './assets/images/1978.jpg',
+  './assets/images/1978_2.jpg',
+  './assets/images/1986.jpg',
+  './assets/images/Maradona_copa_del_mundo.png',
+  './assets/images/1990.jpg',
+  './assets/images/2008.jpg',
+  './assets/images/Messi_copa_america_2024.png',
+  './assets/images/Messi_copa_del_mundo_2022.png',
 ];
 
 function buildObrasCatalog(count) {
@@ -261,7 +303,7 @@ posicionesFondo.forEach((x, index) => {
 });
 
 // Pared del frente (front) - 5 obras
-const posicionesFrente = [-8, -4, 0, 4, 8];
+const posicionesFrente = [-8, -4, 4, 8];
 posicionesFrente.forEach((x, index) => {
   const obra = getObra(index + 5); // Siguiente grupo de obras
   addFrame(scene, interactables, { 
@@ -275,7 +317,7 @@ posicionesFrente.forEach((x, index) => {
 });
 
 // Pared izquierda (left) - 5 obras
-const posicionesIzquierda = [-8, -4, 0, 4, 8];
+const posicionesIzquierda = [-12, -8, -4, 0, 4, 8];
 posicionesIzquierda.forEach((z, index) => {
   const obra = getObra(index + 10); // Siguiente grupo de obras
   addFrame(scene, interactables, { 
@@ -428,8 +470,32 @@ function movePlayer(dt){
   newPosition.addScaledVector(forward, direction.z * speed * dt);
   newPosition.addScaledVector(right,   direction.x * speed * dt);
 
+
+  // --- COLISIÓN DE PAREDES Y PUERTA (ROBUSTA Y SIMPLE) ---
+  let wallCollision = false;
+  const playerRadius = 0.18;
+  // Pared trasera
+  if (newPosition.z < -ROOM.d/2 + playerRadius) wallCollision = true;
+  // Pared izquierda
+  if (newPosition.x < -ROOM.w/2 + playerRadius) wallCollision = true;
+  // Pared derecha
+  if (newPosition.x >  ROOM.w/2 - playerRadius) wallCollision = true;
+
+  // Pared frontal: solo permite pasar si está en el hueco de la puerta (X y Y)
+  const wallZ = ROOM.d/2;
+  const doorMinX = DOOR.centerX - DOOR.width/2;
+  const doorMaxX = DOOR.centerX + DOOR.width/2;
+  const doorMinY = 0;
+  const doorMaxY = DOOR.height;
+  if (newPosition.z >= wallZ - playerRadius) {
+    // Si NO está en el hueco de la puerta, colisiona
+    if (!(newPosition.x > doorMinX && newPosition.x < doorMaxX && newPosition.y >= doorMinY && newPosition.y <= doorMaxY)) {
+      wallCollision = true;
+    }
+  }
+
   // Verificar colisión con la vitrina, las barandas y el rope barrier
-  if (!checkVitrinaCollision(newPosition) && !checkRailingCollision(newPosition) && !checkRopeBarrierCollision(newPosition)) {
+  if (!wallCollision && !checkVitrinaCollision(newPosition) && !checkRailingCollision(newPosition) && !checkRopeBarrierCollision(newPosition)) {
     camera.position.copy(newPosition);
   }
 
@@ -553,10 +619,51 @@ function movePlayer(dt){
 
 
 
-  // Colisiones con paredes
-  const margin = 0.6;
-  camera.position.x = Math.max(-ROOM.w/2 + margin, Math.min(ROOM.w/2 - margin, camera.position.x));
-  camera.position.z = Math.max(-ROOM.d/2 + margin, Math.min(ROOM.d/2 - margin, camera.position.z));
+  // Colisiones con paredes (sala principal + sala pequeña + puerta)
+  const margin = 0.5;
+  
+  // Límites base según la zona
+  let xMin, xMax, zMin, zMax;
+  
+  const inSmallRoom = camera.position.z > ROOM.d/2 + 0.3;
+  
+  if (inSmallRoom) {
+    // Dentro de la sala pequeña
+    xMin = -SMALL.w/2 + margin;
+    xMax =  SMALL.w/2 - margin;
+    zMin = ROOM.d/2 - margin;
+    zMax = ROOM.d/2 + SMALL.d - margin;
+  } else {
+    // En la sala principal
+    xMin = -ROOM.w/2 + margin;
+    xMax =  ROOM.w/2 - margin;
+    zMin = -ROOM.d/2 + margin;
+    zMax = ROOM.d/2 - margin;
+  }
+  
+  // Aplicar límites estándar
+  camera.position.x = Math.max(xMin, Math.min(xMax, camera.position.x));
+  camera.position.z = Math.max(zMin, Math.min(zMax, camera.position.z));
+  
+  // COLISIÓN ESPECIAL DE PUERTA: solo sacar colisión en el hueco
+  const doorMargin = 0.35;
+  const doorLeftEdge = DOOR.centerX - DOOR.width/2 + doorMargin;
+  const doorRightEdge = DOOR.centerX + DOOR.width/2 - doorMargin;
+  const doorTop = finalBalconyHeight - 0.05;
+  const doorBottom = 0.0;
+  const isWithinDoorHeight = camera.position.y >= doorBottom && camera.position.y <= doorTop;
+  const isAlignedWithDoor = camera.position.x >= doorLeftEdge && camera.position.x <= doorRightEdge;
+
+  // Si está en la franja de la pared frontal
+  if (camera.position.z > ROOM.d/2 - margin && camera.position.z < ROOM.d/2 + 0.7) {
+    // Si está en el hueco, no se aplica colisión (puede pasar)
+    if (!(isWithinDoorHeight && isAlignedWithDoor)) {
+      // Si NO está en el hueco de la puerta, bloquear el paso
+      if (camera.position.z > ROOM.d/2 - margin) {
+        camera.position.z = ROOM.d/2 - margin;
+      }
+    }
+  }
 }
 
 // ======== Inicializar sistema de raycast ========
