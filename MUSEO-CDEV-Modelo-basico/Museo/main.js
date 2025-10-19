@@ -212,7 +212,7 @@ console.log('🚧 Cargando rope barriers...');
 // Posiciones y rotaciones de las rope barriers
 const ropeBarrierPositions = [
   { x: 0.3, y: 0, z: 16.1, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, // Primera barrera cerca de recepción
-  //{ x: 0.97, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Segunda barrera cerca de recepción
+  { x: 0.97, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Segunda barrera cerca de recepción
   { x: -1.9, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, // Tercera barrera cerca de recepción
   { x: -4.8, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 }, //Cuarta barrera cerca de recepción
   { x: -7.76, y: 0, z: 12.6, rotX: 0, rotY: Math.PI/2, rotZ: 0 }, //Quinta barrera sigue orden de izquierda a derecha desde donde arrancas
