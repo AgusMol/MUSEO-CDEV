@@ -77,6 +77,28 @@ export function checkVitrinaCollision(newPos, vitrinas, finalBalconyHeight) {
         return true;
       }
     }
+    
+    // Vitrina Jabulani 2
+    if (vitrinas.vitrinaJabulani2) {
+      const vitrinaJabulani2Pos = vitrinas.vitrinaJabulani2.position;
+      const vitrinaJabulani2Size = { x: 0.7, z: 0.7 };
+      const dxJ2 = Math.abs(newPos.x - vitrinaJabulani2Pos.x);
+      const dzJ2 = Math.abs(newPos.z - vitrinaJabulani2Pos.z);
+      if (dxJ2 < (vitrinaJabulani2Size.x / 2 + playerRadius) && dzJ2 < (vitrinaJabulani2Size.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
+    
+    // Vitrina Jabulani 3
+    if (vitrinas.vitrinaJabulani3) {
+      const vitrinaJabulani3Pos = vitrinas.vitrinaJabulani3.position;
+      const vitrinaJabulani3Size = { x: 0.7, z: 0.7 };
+      const dxJ3 = Math.abs(newPos.x - vitrinaJabulani3Pos.x);
+      const dzJ3 = Math.abs(newPos.z - vitrinaJabulani3Pos.z);
+      if (dxJ3 < (vitrinaJabulani3Size.x / 2 + playerRadius) && dzJ3 < (vitrinaJabulani3Size.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
   }
 
   // Vitrina central cilíndrica (suelo-techo)

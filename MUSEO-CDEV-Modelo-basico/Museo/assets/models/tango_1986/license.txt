@@ -1,0 +1,11 @@
+Model Information:
+* title:	Soccerball - Adidas Tango 1982
+* source:	https://sketchfab.com/3d-models/soccerball-adidas-tango-1982-c030c7acef5b45f2b204a37f91479562
+* author:	fra978 (https://sketchfab.com/fra978)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Soccerball - Adidas Tango 1982" (https://sketchfab.com/3d-models/soccerball-adidas-tango-1982-c030c7acef5b45f2b204a37f91479562) by fra978 (https://sketchfab.com/fra978) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

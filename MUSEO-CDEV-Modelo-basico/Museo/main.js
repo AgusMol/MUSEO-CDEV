@@ -2,7 +2,7 @@
 import { createYouTubeBgm } from './bgm/youtubeBgm.js'; // para música de fondo
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4 } from './src/objects/vitrinas.js';
+import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4, createVitrinaJabulani2, createVitrinaJabulani3 } from './src/objects/vitrinas.js';
 // addFrame ahora es usado internamente por módulos; no se importa aquí
 import { createGoldenPlaque } from './src/ui/plaques.js';
 import { initControls, getMoveState, isCrouching, setCrouching, isPointerLocked } from './src/controls/input.js';
@@ -231,7 +231,7 @@ const { group: vitrinaGroup, baseY: vitrina1BaseY, vitH: vitrinaHeight, jabulani
 
 // ====== Vitrina de Vidrio 2 (modular: Copa del Mundo Original) ======
 // Parámetros: (scene, interactables, x, z, rotationY)
-const { group: vitrina2Group, baseY: vitrina2BaseY, trofeoModelRef, luces: { luzTrofeo, luzLateral, luzLateral2 } } = createVitrina2(scene, interactables, -7.5, 3, Math.PI/4 + Math.PI);
+const { group: vitrina2Group, baseY: vitrina2BaseY, trofeoModelRef, luces: { luzTrofeo, luzLateral, luzLateral2 } } = createVitrina2(scene, interactables, -7.5, 6, Math.PI/4 + Math.PI);
 
 // ====== Copa América 2021 (modular) ======
 // Parámetros: (scene, interactables, x, z, rotationY)
@@ -247,9 +247,15 @@ const { group: vitrina4Group, baseY: vitrina4BaseY, glassH: vitrina4GlassHeight,
 
 // ====== Vitrinas Copa del Mundo - Duplicados ======
 // Parámetros: (scene, interactables, x, z, rotationY)
-const { group: vitrina5Group, baseY: vitrina5BaseY, trofeoModelRef: trofeoModelRef5, luces: { luzTrofeo: luzTrofeo5, luzLateral: luzLateral5, luzLateral2: luzLateral25 } } = createVitrinaWorldCup3(scene, interactables, -7.5, 14, Math.PI/4 + Math.PI);
+const { group: vitrina5Group, baseY: vitrina5BaseY, trofeoModelRef: trofeoModelRef5, luces: { luzTrofeo: luzTrofeo5, luzLateral: luzLateral5, luzLateral2: luzLateral25 } } = createVitrinaWorldCup3(scene, interactables, -6, 17.2, Math.PI/2);
 
 const { group: vitrina6Group, baseY: vitrina6BaseY, trofeoModelRef: trofeoModelRef6, luces: { luzTrofeo: luzTrofeo6, luzLateral: luzLateral6, luzLateral2: luzLateral26 } } = createVitrinaWorldCup4(scene, interactables, 9.5, 17.2, Math.PI/2);
+
+// ====== Vitrinas Jabulani - Duplicados ======
+// Parámetros: (scene, interactables, x, z, rotationY)
+const { group: vitrinaJabulani2Group, baseY: vitrinaJabulani2BaseY, vitH: vitrinaJabulani2Height, jabulaniModelRef: jabulaniModelRef2, luzObjeto: luzJabulani2 } = createVitrinaJabulani2(scene, interactables, 6.5, 12.5, Math.PI/4);
+
+const { group: vitrinaJabulani3Group, baseY: vitrinaJabulani3BaseY, vitH: vitrinaJabulani3Height, jabulaniModelRef: jabulaniModelRef3, luzObjeto: luzJabulani3 } = createVitrinaJabulani3(scene, interactables, -7.5, 1, Math.PI/4 + Math.PI);
 
 
 // ======== Sistema de colisiones (modularizado) ========
@@ -261,6 +267,8 @@ const collisionSystem = initCollisionSystem(
     vitrina4: vitrina4Group,
     vitrina5: vitrina5Group,
     vitrina6: vitrina6Group,
+    vitrinaJabulani2: vitrinaJabulani2Group,
+    vitrinaJabulani3: vitrinaJabulani3Group,
     vitrinaTall: vitrinaTallGroup,
     tallRadius: tallRadius
   },
@@ -394,6 +402,16 @@ function animate(now){
   if (jabulaniModelRef.current) {
     jabulaniModelRef.current.rotation.y += dt * 0.5;
   }
+  
+  // Rotar los modelos Jabulani duplicados si están cargados
+  if (jabulaniModelRef2.current) {
+    jabulaniModelRef2.current.rotation.y += dt * 0.5;
+  }
+  
+  // Tango 1986 - sin rotación, se mantiene fija
+  // if (jabulaniModelRef3.current) {
+  //   jabulaniModelRef3.current.rotation.y += dt * 0.5;
+  // }
   
   // Rotar el trofeo de la Copa del Mundo si está cargado
   if (trofeoModelRef.current) {

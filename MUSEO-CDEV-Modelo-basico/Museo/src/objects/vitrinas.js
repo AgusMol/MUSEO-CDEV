@@ -5,6 +5,41 @@ import { createGoldenPlaque } from '../ui/plaques.js';
 const vidriaMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, metalness: 0.0, roughness: 0.0 });
 const marcoMaterial  = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.2 });
 
+// Textura compartida para todas las vitrinas Jabulani
+let jabulaniSharedTexture = null;
+let jabulaniTextureLoading = false;
+const jabulaniTextureCallbacks = [];
+
+function loadJabulaniTexture(callback) {
+  if (jabulaniSharedTexture) {
+    callback(jabulaniSharedTexture);
+    return;
+  }
+  
+  jabulaniTextureCallbacks.push(callback);
+  
+  if (jabulaniTextureLoading) return;
+  
+  jabulaniTextureLoading = true;
+  const tl = new THREE.TextureLoader();
+  tl.load(
+    '/assets/models/jabulani/textures/JABULANI_baseColor.png',
+    (tex) => {
+      tex.flipY = false;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      jabulaniSharedTexture = tex;
+      jabulaniTextureCallbacks.forEach(cb => cb(tex));
+      jabulaniTextureCallbacks.length = 0;
+    },
+    undefined,
+    () => {
+      jabulaniTextureCallbacks.forEach(cb => cb(null));
+      jabulaniTextureCallbacks.length = 0;
+    }
+  );
+}
+
 export function createVitrina1(scene, interactables, x = -7.5, z = 6, rotationY = Math.PI){
   const group = new THREE.Group();
   const w=0.7,d=0.7,h=1.0; const base = new THREE.Mesh(new THREE.BoxGeometry(w+0.1,0.15,d+0.1), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.3, roughness:0.7 })); base.position.y=0.075; base.receiveShadow=base.castShadow=true; group.add(base);
@@ -18,13 +53,152 @@ export function createVitrina1(scene, interactables, x = -7.5, z = 6, rotationY 
   const frameTop = new THREE.Mesh(new THREE.BoxGeometry(vitW + 0.06, 0.03, vitD + 0.06), marcoMaterial); frameTop.position.set(0, baseY + vitH + 0.015, 0); group.add(frameTop);
 
   const objetoGroup = new THREE.Group(); const pedestalInterno = new THREE.Mesh(new THREE.CylinderGeometry(0.20,0.20,0.15,32), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.4, roughness:0.6 })); pedestalInterno.position.y=0.075; pedestalInterno.castShadow=pedestalInterno.receiveShadow=true; objetoGroup.add(pedestalInterno);
-  const tl = new THREE.TextureLoader(); let jabulaniTexture = null; const modelRef = { current: null };
-  function spawnJabulani(){ const geo = new THREE.SphereGeometry(0.15,64,32); const mat = new THREE.MeshStandardMaterial(jabulaniTexture?{ map:jabulaniTexture, color:0xffffff, metalness:0.1, roughness:0.7 }:{ color:0xffffff, metalness:0.1, roughness:0.7 }); const m = new THREE.Mesh(geo, mat); m.position.y=0.3; m.rotation.set(0,0,-Math.PI/2); m.castShadow=m.receiveShadow=true; objetoGroup.add(m); modelRef.current=m; }
-  tl.load('/assets/models/jabulani/textures/JABULANI_baseColor.png', (tex)=>{ tex.flipY=false; tex.colorSpace=THREE.SRGBColorSpace; tex.wrapS=tex.wrapT=THREE.RepeatWrapping; jabulaniTexture=tex; spawnJabulani(); }, undefined, ()=>{ spawnJabulani(); });
+  const modelRef = { current: null };
+  function spawnJabulani(tex){ const geo = new THREE.SphereGeometry(0.15,64,32); const mat = new THREE.MeshStandardMaterial(tex?{ map:tex, color:0xffffff, metalness:0.1, roughness:0.7 }:{ color:0xffffff, metalness:0.1, roughness:0.7 }); const m = new THREE.Mesh(geo, mat); m.position.y=0.3; m.rotation.set(0,0,-Math.PI/2); m.castShadow=m.receiveShadow=true; objetoGroup.add(m); modelRef.current=m; }
+  loadJabulaniTexture(spawnJabulani);
   objetoGroup.position.set(0, baseY, 0); group.add(objetoGroup);
-  const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=true; group.add(luzObjeto); group.add(luzObjeto.target);
+  const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=false; group.add(luzObjeto); group.add(luzObjeto.target);
 
   const placa = createGoldenPlaque("JABULANI 2010", "Balón oficial utilizado en la Copa Mundial de la FIFA Sudáfrica 2010. El Jabulani, diseñado por Adidas, fue el primer balón esférico completamente redondo gracias a su innovadora tecnología de 8 paneles termoformados. Su nombre significa 'celebrar' en idioma zulú, representando el espíritu festivo del continente africano. Este ejemplar forma parte de la colección de objetos históricos del fútbol mundial.");
+  placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
+
+  group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
+  return { group, baseY, vitH, jabulaniModelRef: modelRef, luzObjeto };
+}
+
+export function createVitrinaJabulani2(scene, interactables, x = -7.5, z = 6, rotationY = Math.PI){
+  const group = new THREE.Group();
+  const w=0.7,d=0.7,h=1.0; const base = new THREE.Mesh(new THREE.BoxGeometry(w+0.1,0.15,d+0.1), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.3, roughness:0.7 })); base.position.y=0.075; base.receiveShadow=base.castShadow=true; group.add(base);
+  const col = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({ color:0x2a2a2a, metalness:0.4, roughness:0.6 })); col.position.y=h/2+0.15; col.receiveShadow=col.castShadow=true; group.add(col);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w+0.05,0.08,d+0.05), new THREE.MeshStandardMaterial({ color:0x404040, metalness:0.5, roughness:0.4 })); top.position.y=h+0.15+0.04; top.receiveShadow=true; group.add(top);
+  const vitH=0.65, vitW=0.65, vitD=0.65, thick=0.02, baseY = h+0.15+0.08; 
+  const front = new THREE.Mesh(new THREE.BoxGeometry(vitW, vitH, thick), vidriaMaterial); front.position.set(0, baseY + vitH/2, vitD/2); group.add(front);
+  const back  = new THREE.Mesh(new THREE.BoxGeometry(vitW, vitH, thick), vidriaMaterial); back.position.set(0, baseY + vitH/2, -vitD/2); group.add(back);
+  const left  = new THREE.Mesh(new THREE.BoxGeometry(thick, vitH, vitD), vidriaMaterial); left.position.set(-vitW/2, baseY + vitH/2, 0); group.add(left);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(thick, vitH, vitD), vidriaMaterial); right.position.set( vitW/2, baseY + vitH/2, 0); group.add(right);
+  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(vitW + 0.06, 0.03, vitD + 0.06), marcoMaterial); frameTop.position.set(0, baseY + vitH + 0.015, 0); group.add(frameTop);
+
+  const objetoGroup = new THREE.Group(); const pedestalInterno = new THREE.Mesh(new THREE.CylinderGeometry(0.20,0.20,0.15,32), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.4, roughness:0.6 })); pedestalInterno.position.y=0.075; pedestalInterno.castShadow=pedestalInterno.receiveShadow=true; objetoGroup.add(pedestalInterno);
+  const modelRef = { current: null };
+  
+  // Cargar modelo GLTF de pelota_2022
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load('/assets/models/pelota_2022/scene.gltf', (gltf) => {
+    const pelotaModel = gltf.scene;
+    
+    // Calcular tamaño y escalar
+    const box = new THREE.Box3().setFromObject(pelotaModel);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const targetSize = 0.35; // Diámetro deseado (aumentado de 0.3 a 0.35)
+    const scale = targetSize / maxDim;
+    
+    pelotaModel.scale.setScalar(scale);
+    pelotaModel.position.set(0, 0.28, 0); // Subido a 0.28 para que quede mejor posicionado
+    pelotaModel.rotation.set(0, 0, -Math.PI/2);
+    
+    // Configurar materiales y sombras
+    pelotaModel.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        if (node.material) {
+          if (node.material.map) {
+            try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+          }
+        }
+      }
+    });
+    
+    objetoGroup.add(pelotaModel);
+    modelRef.current = pelotaModel;
+    console.log('✅ Pelota 2022 cargada en vitrina Jabulani2');
+  }, undefined, (error) => {
+    console.error('❌ Error cargando pelota_2022 GLTF:', error);
+  });
+  
+  objetoGroup.position.set(0, baseY, 0); group.add(objetoGroup);
+  const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=false; group.add(luzObjeto); group.add(luzObjeto.target);
+
+  const placa = createGoldenPlaque("AL RIHLA 2022", "Balón oficial utilizado en la Copa Mundial de la FIFA Qatar 2022. Al Rihla, cuyo nombre significa 'El Viaje' en árabe, fue diseñado por Adidas con una tecnología innovadora que lo convierte en el balón más rápido en la historia de los mundiales. Su diseño aerodinámico y paneles texturizados lo hacen único. Este balón fue testigo del histórico triunfo de Argentina en Qatar.");
+  placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
+
+  group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
+  return { group, baseY, vitH, jabulaniModelRef: modelRef, luzObjeto };
+}
+
+export function createVitrinaJabulani3(scene, interactables, x = -7.5, z = 6, rotationY = Math.PI){
+  const group = new THREE.Group();
+  const w=0.7,d=0.7,h=1.0; const base = new THREE.Mesh(new THREE.BoxGeometry(w+0.1,0.15,d+0.1), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.3, roughness:0.7 })); base.position.y=0.075; base.receiveShadow=base.castShadow=true; group.add(base);
+  const col = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({ color:0x2a2a2a, metalness:0.4, roughness:0.6 })); col.position.y=h/2+0.15; col.receiveShadow=col.castShadow=true; group.add(col);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w+0.05,0.08,d+0.05), new THREE.MeshStandardMaterial({ color:0x404040, metalness:0.5, roughness:0.4 })); top.position.y=h+0.15+0.04; top.receiveShadow=true; group.add(top);
+  const vitH=0.65, vitW=0.65, vitD=0.65, thick=0.02, baseY = h+0.15+0.08; 
+  const front = new THREE.Mesh(new THREE.BoxGeometry(vitW, vitH, thick), vidriaMaterial); front.position.set(0, baseY + vitH/2, vitD/2); group.add(front);
+  const back  = new THREE.Mesh(new THREE.BoxGeometry(vitW, vitH, thick), vidriaMaterial); back.position.set(0, baseY + vitH/2, -vitD/2); group.add(back);
+  const left  = new THREE.Mesh(new THREE.BoxGeometry(thick, vitH, vitD), vidriaMaterial); left.position.set(-vitW/2, baseY + vitH/2, 0); group.add(left);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(thick, vitH, vitD), vidriaMaterial); right.position.set( vitW/2, baseY + vitH/2, 0); group.add(right);
+  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(vitW + 0.06, 0.03, vitD + 0.06), marcoMaterial); frameTop.position.set(0, baseY + vitH + 0.015, 0); group.add(frameTop);
+
+  const objetoGroup = new THREE.Group(); const pedestalInterno = new THREE.Mesh(new THREE.CylinderGeometry(0.20,0.20,0.15,32), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.4, roughness:0.6 })); pedestalInterno.position.y=0.075; pedestalInterno.castShadow=pedestalInterno.receiveShadow=true; objetoGroup.add(pedestalInterno);
+  const modelRef = { current: null };
+  
+  // Cargar modelo GLTF de tango_1986
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load('/assets/models/tango_1986/scene.gltf', (gltf) => {
+    const tangoModel = gltf.scene;
+    
+    // Calcular bounding box original
+    const box = new THREE.Box3().setFromObject(tangoModel);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const targetSize = 0.30; // Mismo diámetro que la Jabulani (radio 0.15)
+    const scale = targetSize / maxDim;
+    
+    // Crear un grupo wrapper que estará centrado
+    const tangoWrapper = new THREE.Group();
+    
+    // Aplicar escala al modelo
+    tangoModel.scale.setScalar(scale);
+    
+    // Mover el modelo para que su centro esté en el origen del wrapper
+    tangoModel.position.set(
+      -center.x * scale,
+      -center.y * scale,
+      -center.z * scale
+    );
+    tangoModel.rotation.set(0, 0, -Math.PI/2);
+    
+    // Configurar materiales y sombras
+    tangoModel.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        if (node.material) {
+          if (node.material.map) {
+            try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+          }
+        }
+      }
+    });
+    
+    // Agregar el modelo al wrapper
+    tangoWrapper.add(tangoModel);
+    
+    // Posicionar el wrapper centrado (ajuste manual en X y Z para compensar descentrado del modelo)
+    tangoWrapper.position.set(-0.2, 0.475, 0);
+    
+    objetoGroup.add(tangoWrapper);
+    modelRef.current = tangoWrapper;
+    console.log('✅ Tango 1986 cargado en vitrina Jabulani3');
+  }, undefined, (error) => {
+    console.error('❌ Error cargando tango_1986 GLTF:', error);
+  });
+  
+  objetoGroup.position.set(0, baseY, 0); group.add(objetoGroup);
+  const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=false; group.add(luzObjeto); group.add(luzObjeto.target);
+
+  const placa = createGoldenPlaque("TANGO 1986", "Balón oficial utilizado en la Copa Mundial de la FIFA México 1986. El Adidas Tango fue el primer balón totalmente sintético en una Copa del Mundo, eliminando la absorción de agua y mejorando significativamente su comportamiento en condiciones de lluvia. Su icónico diseño con triadas decorativas se convirtió en símbolo de excelencia. Este balón fue testigo de la legendaria 'Mano de Dios' y el 'Gol del Siglo' de Diego Maradona.");
   placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
 
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
