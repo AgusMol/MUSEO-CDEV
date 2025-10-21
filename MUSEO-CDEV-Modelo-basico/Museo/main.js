@@ -11,7 +11,7 @@ import { initRaycast, tryOpenInfo, updateAimLabel, getRaycaster } from './src/ui
 import { initLightSwitch, getLightSwitchModel, toggleLightSwitch } from './src/objects/lightSwitch.js';
 import { initRopeBarriers, checkRopeBarrierCollision as checkRopeBarrierCollisionModule } from './src/objects/ropeBarriers.js';
 import { ropeBarrierPositions } from './src/objects/ropeBarrierLayout.js';
-import { placeArtworks } from './src/objects/artworks.js';
+import { placeArtworks, placeUpperFloorArtworks } from './src/objects/artworks.js';
 import { initMovement } from './src/controls/movement.js';
 import { createSecondFloor } from './src/world/secondFloor.js';
 import { initCollisionSystem } from './src/physics/collisions.js';
@@ -223,6 +223,9 @@ if (window.__pendingInteractables && Array.isArray(window.__pendingInteractables
 }
 // Colocar obras de forma modular
 placeArtworks(scene, interactables, ROOM);
+
+// Colocar cuadros en el piso superior
+placeUpperFloorArtworks(scene, interactables, finalBalconyHeight);
 
 
 // ======== Vitrina de Vidrio 1 (modular: Jabulani) ========
