@@ -443,3 +443,67 @@ export function createVitrinaWorldCup4(scene, interactables, x = 7, z = 7, rotat
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
   return { group, baseY, trofeoModelRef: modelRef, luces: { luzTrofeo, luzLateral, luzLateral2 } };
 }
+
+export function createVitrinaMedallaOlimpica(scene, interactables, x = -7.5, z = 6, rotationY = Math.PI){
+  const group = new THREE.Group();
+  const w=0.7,d=0.7,h=0.7; const base = new THREE.Mesh(new THREE.BoxGeometry(w+0.1,0.15,d+0.1), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.3, roughness:0.7 })); base.position.y=0.075; base.receiveShadow=base.castShadow=true; group.add(base);
+  const col = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({ color:0x2a2a2a, metalness:0.4, roughness:0.6 })); col.position.y=h/2+0.15; col.receiveShadow=col.castShadow=true; group.add(col);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w+0.05,0.08,d+0.05), new THREE.MeshStandardMaterial({ color:0x404040, metalness:0.5, roughness:0.4 })); top.position.y=h+0.15+0.04; top.receiveShadow=true; group.add(top);
+  const vitH=0.55, vitW=0.65, vitD=0.65, thick=0.02, baseY = h+0.15+0.08; 
+  const front = new THREE.Mesh(new THREE.BoxGeometry(vitW, vitH, thick), vidriaMaterial); front.position.set(0, baseY + vitH/2, vitD/2); group.add(front);
+  const back  = new THREE.Mesh(new THREE.BoxGeometry(vitW, vitH, thick), vidriaMaterial); back.position.set(0, baseY + vitH/2, -vitD/2); group.add(back);
+  const left  = new THREE.Mesh(new THREE.BoxGeometry(thick, vitH, vitD), vidriaMaterial); left.position.set(-vitW/2, baseY + vitH/2, 0); group.add(left);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(thick, vitH, vitD), vidriaMaterial); right.position.set( vitW/2, baseY + vitH/2, 0); group.add(right);
+  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(vitW + 0.06, 0.03, vitD + 0.06), marcoMaterial); frameTop.position.set(0, baseY + vitH + 0.015, 0); group.add(frameTop);
+
+  const objetoGroup = new THREE.Group(); const pedestalInterno = new THREE.Mesh(new THREE.CylinderGeometry(0.20,0.20,0.15,32), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.4, roughness:0.6 })); pedestalInterno.position.y=0.075; pedestalInterno.castShadow=pedestalInterno.receiveShadow=true; objetoGroup.add(pedestalInterno);
+  const modelRef = { current: null };
+  
+  // Cargar modelo GLTF de medalla olímpica
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load('/assets/models/medalla_olímpica/scene.gltf', (gltf) => {
+    const medallaModel = gltf.scene;
+    
+    // Calcular tamaño y escalar
+    const box = new THREE.Box3().setFromObject(medallaModel);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const targetSize = 0.35; // Tamaño similar a las pelotas
+    const scale = targetSize / maxDim;
+    
+    medallaModel.scale.setScalar(scale);
+    medallaModel.position.set(0, 0.16, 0);
+    medallaModel.rotation.set(0, 0, 0); // Sin rotación inicial
+    
+    // Configurar materiales y sombras
+    medallaModel.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        if (node.material) {
+          if (node.material.map) {
+            try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+          }
+          if (node.material.normalMap) {
+            try { node.material.normalMap.colorSpace = THREE.LinearSRGBColorSpace; } catch(e) {}
+          }
+        }
+      }
+    });
+    
+    objetoGroup.add(medallaModel);
+    modelRef.current = medallaModel;
+    console.log('✅ Medalla Olímpica cargada en vitrina');
+  }, undefined, (error) => {
+    console.error('❌ Error cargando Medalla Olímpica GLTF:', error);
+  });
+  
+  objetoGroup.position.set(0, baseY, 0); group.add(objetoGroup);
+  const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=false; group.add(luzObjeto); group.add(luzObjeto.target);
+
+  const placa = createGoldenPlaque("MEDALLA OLÍMPICA BEIJING 2008", "Medalla de oro olímpica de los Juegos de Beijing 2008. El fútbol masculino fue ganado por Argentina, que derrotó a Nigeria 1-0 en la final con un gol de Ángel Di María. Esta victoria representó el segundo oro olímpico consecutivo para Argentina, consolidando su dominio en el fútbol olímpico con figuras como Lionel Messi, Juan Román Riquelme y Sergio Agüero.");
+  placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
+
+  group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
+  return { group, baseY, vitH, medallaModelRef: modelRef, luzObjeto };
+}

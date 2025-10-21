@@ -1,7 +1,7 @@
 // Layout de Rope Barriers (posiciones y rotaciones)
 export const ropeBarrierPositions = [
   { x: 0.3, y: 0, z: 16.1, rotX: 0, rotY: Math.PI/2, rotZ: 0 },
-  { x: 0.97, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 },
+  //{ x: 0.97, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 },
   { x: -1.9, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 },
   { x: -4.8, y: 0, z: 12.5, rotX: 0, rotY: 0, rotZ: 0 },
   { x: -7.76, y: 0, z: 12.6, rotX: 0, rotY: Math.PI/2, rotZ: 0 },

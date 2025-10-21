@@ -2,7 +2,7 @@
 import { createYouTubeBgm } from './bgm/youtubeBgm.js'; // para música de fondo
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4, createVitrinaJabulani2, createVitrinaJabulani3 } from './src/objects/vitrinas.js';
+import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4, createVitrinaJabulani2, createVitrinaJabulani3, createVitrinaMedallaOlimpica } from './src/objects/vitrinas.js';
 // addFrame ahora es usado internamente por módulos; no se importa aquí
 import { createGoldenPlaque } from './src/ui/plaques.js';
 import { initControls, getMoveState, isCrouching, setCrouching, isPointerLocked } from './src/controls/input.js';
@@ -257,6 +257,9 @@ const { group: vitrinaJabulani2Group, baseY: vitrinaJabulani2BaseY, vitH: vitrin
 
 const { group: vitrinaJabulani3Group, baseY: vitrinaJabulani3BaseY, vitH: vitrinaJabulani3Height, jabulaniModelRef: jabulaniModelRef3, luzObjeto: luzJabulani3 } = createVitrinaJabulani3(scene, interactables, -7.5, 1, Math.PI/4 + Math.PI);
 
+// Medalla Olímpica - posicionada cerca de las otras vitrinas
+const { group: vitrinaMedallaGroup, baseY: vitrinaMedallaBaseY, vitH: vitrinaMedallaHeight, medallaModelRef, luzObjeto: luzMedalla } = createVitrinaMedallaOlimpica(scene, interactables, 3, -12.5, -Math.PI/4 + Math.PI);
+
 
 // ======== Sistema de colisiones (modularizado) ========
 const collisionSystem = initCollisionSystem(
@@ -269,6 +272,7 @@ const collisionSystem = initCollisionSystem(
     vitrina6: vitrina6Group,
     vitrinaJabulani2: vitrinaJabulani2Group,
     vitrinaJabulani3: vitrinaJabulani3Group,
+    vitrinaMedalla: vitrinaMedallaGroup,
     vitrinaTall: vitrinaTallGroup,
     tallRadius: tallRadius
   },
@@ -408,10 +412,15 @@ function animate(now){
     jabulaniModelRef2.current.rotation.y += dt * 0.5;
   }
   
-  // Tango 1986 - sin rotación, se mantiene fija
-  // if (jabulaniModelRef3.current) {
-  //   jabulaniModelRef3.current.rotation.y += dt * 0.5;
-  // }
+  //Tango 1986 - sin rotación, se mantiene fija
+  //if (jabulaniModelRef3.current) {
+  //jabulaniModelRef3.current.rotation.y += dt * 0.5;
+  //}
+  
+  // Rotar la medalla olímpica si está cargada
+  if (medallaModelRef.current) {
+    medallaModelRef.current.rotation.y += dt * 0.4;
+  }
   
   // Rotar el trofeo de la Copa del Mundo si está cargado
   if (trofeoModelRef.current) {

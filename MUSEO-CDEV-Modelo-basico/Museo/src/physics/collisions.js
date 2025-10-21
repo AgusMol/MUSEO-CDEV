@@ -99,6 +99,17 @@ export function checkVitrinaCollision(newPos, vitrinas, finalBalconyHeight) {
         return true;
       }
     }
+    
+    // Vitrina Medalla Olímpica
+    if (vitrinas.vitrinaMedalla) {
+      const vitrinaMedallaPos = vitrinas.vitrinaMedalla.position;
+      const vitrinaMedallaSize = { x: 0.7, z: 0.7 };
+      const dxM = Math.abs(newPos.x - vitrinaMedallaPos.x);
+      const dzM = Math.abs(newPos.z - vitrinaMedallaPos.z);
+      if (dxM < (vitrinaMedallaSize.x / 2 + playerRadius) && dzM < (vitrinaMedallaSize.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
   }
 
   // Vitrina central cilíndrica (suelo-techo)
