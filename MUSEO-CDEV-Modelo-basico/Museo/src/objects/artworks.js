@@ -6,21 +6,21 @@ const availableImageFiles = [
   './assets/images/1978_2.jpg', // 1
   './assets/images/1978.jpg', // 2
   './assets/images/8.jpeg', //8
-  './assets/images/7.jpeg', //7
-  './assets/images/6.jpeg', //6
-  './assets/images/1990.jpg', //5
+  './assets/images/1994.jpg', //7
+  './assets/images/1990.jpg', //6
+  './assets/images/mano_dios.jpg', //5
   './assets/images/Maradona_copa_del_mundo.png', //4
   './assets/images/1986.jpg', //3
   './assets/images/9.jpeg', //9
   './assets/images/10.jpeg', //10
   './assets/images/11.png', //11
-  './assets/images/12.jpeg', //12
-  './assets/images/13.jpeg', //13
-  './assets/images/14.jpeg', //14
-  './assets/images/2008.jpg', //15
-  './assets/images/16.jpeg', //16
-  './assets/images/17.jpeg', //17
-  './assets/images/18.jpeg', //18
+  './assets/images/2008.jpg', //12
+  './assets/images/2009.jpg', //13
+  './assets/images/2010.jpg', //14
+  './assets/images/2014_heroe.gif', //15
+  './assets/images/2014.jpg', //16
+  './assets/images/messi_llorando.jpg', //17
+  './assets/images/2021.jpg', //18
   './assets/images/Messi_copa_america_2024.png', //20
   './assets/images/Messi_copa_del_mundo_2022.png', //19
 ];

@@ -2,7 +2,7 @@
 import { createYouTubeBgm } from './bgm/youtubeBgm.js'; // para música de fondo
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo } from './src/objects/vitrinas.js';
+import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4 } from './src/objects/vitrinas.js';
 // addFrame ahora es usado internamente por módulos; no se importa aquí
 import { createGoldenPlaque } from './src/ui/plaques.js';
 import { initControls, getMoveState, isCrouching, setCrouching, isPointerLocked } from './src/controls/input.js';
@@ -225,20 +225,31 @@ if (window.__pendingInteractables && Array.isArray(window.__pendingInteractables
 placeArtworks(scene, interactables, ROOM);
 
 
-// ======== Vitrina de Vidrio 1 (modular) ========
-const { group: vitrinaGroup, baseY: vitrina1BaseY, vitH: vitrinaHeight, jabulaniModelRef, luzObjeto } = createVitrina1(scene, interactables);
+// ======== Vitrina de Vidrio 1 (modular: Jabulani) ========
+// Parámetros: (scene, interactables, x, z, rotationY)
+const { group: vitrinaGroup, baseY: vitrina1BaseY, vitH: vitrinaHeight, jabulaniModelRef, luzObjeto } = createVitrina1(scene, interactables, 6.5, -8, Math.PI/4);
 
-// ====== Vitrina de Vidrio 2 (modular: Copa del Mundo) ======
-const { group: vitrina2Group, baseY: vitrina2BaseY, trofeoModelRef, luces: { luzTrofeo, luzLateral, luzLateral2 } } = createVitrina2(scene, interactables);
+// ====== Vitrina de Vidrio 2 (modular: Copa del Mundo Original) ======
+// Parámetros: (scene, interactables, x, z, rotationY)
+const { group: vitrina2Group, baseY: vitrina2BaseY, trofeoModelRef, luces: { luzTrofeo, luzLateral, luzLateral2 } } = createVitrina2(scene, interactables, -7.5, 3, Math.PI/4 + Math.PI);
 
-// ====== Copa Libertadores (modular) ======
-const { group: vitrina3Group, baseY: vitrina3BaseY, glassH: vitrina3GlassHeight, copaModelRef: copaLibertadoresModelRef, luces: { spot: luzCopaLibertadores, l1: luzLateralCopa, l2: luzLateralCopa2 } } = createVitrinaLibertadores(scene, interactables);
+// ====== Copa América 2021 (modular) ======
+// Parámetros: (scene, interactables, x, z, rotationY)
+const { group: vitrina3Group, baseY: vitrina3BaseY, glassH: vitrina3GlassHeight, copaModelRef: copaLibertadoresModelRef, luces: { spot: luzCopaLibertadores, l1: luzLateralCopa, l2: luzLateralCopa2 } } = createVitrinaLibertadores(scene, interactables, 6.5, 8, Math.PI/4);
 
-// ======== Vitrina cilíndrica alta (modular) ========
-const { group: vitrinaTallGroup, tallRadius, escudoModelRef, escudoPlaceholderRef } = createVitrinaCentralEscudo(scene, interactables, ROOM);
+// ======== Vitrina cilíndrica alta (modular: Escudo AFA) ========
+// Parámetros: (scene, interactables, ROOM, x, z, rotationY)
+const { group: vitrinaTallGroup, tallRadius, escudoModelRef, escudoPlaceholderRef } = createVitrinaCentralEscudo(scene, interactables, ROOM, 0, 0, 0);
 
-// ====== Vitrina 4: Copa América (modular) - Declaración anticipada ======
-const { group: vitrina4Group, baseY: vitrina4BaseY, glassH: vitrina4GlassHeight, copaModelRef: copaAmericaModelRef, luces: { spot: luzCopaAmerica, l1: luzLateralCopa4, l2: luzLateralCopa42 } } = createVitrinaAmerica(scene, interactables);
+// ====== Vitrina 4: Copa América 2024 (modular) ======
+// Parámetros: (scene, interactables, x, z, rotationY)
+const { group: vitrina4Group, baseY: vitrina4BaseY, glassH: vitrina4GlassHeight, copaModelRef: copaAmericaModelRef, luces: { spot: luzCopaAmerica, l1: luzLateralCopa4, l2: luzLateralCopa42 } } = createVitrinaAmerica(scene, interactables, 5.5, 17.2, Math.PI/2);
+
+// ====== Vitrinas Copa del Mundo - Duplicados ======
+// Parámetros: (scene, interactables, x, z, rotationY)
+const { group: vitrina5Group, baseY: vitrina5BaseY, trofeoModelRef: trofeoModelRef5, luces: { luzTrofeo: luzTrofeo5, luzLateral: luzLateral5, luzLateral2: luzLateral25 } } = createVitrinaWorldCup3(scene, interactables, -7.5, 14, Math.PI/4 + Math.PI);
+
+const { group: vitrina6Group, baseY: vitrina6BaseY, trofeoModelRef: trofeoModelRef6, luces: { luzTrofeo: luzTrofeo6, luzLateral: luzLateral6, luzLateral2: luzLateral26 } } = createVitrinaWorldCup4(scene, interactables, 9.5, 17.2, Math.PI/2);
 
 
 // ======== Sistema de colisiones (modularizado) ========
@@ -248,6 +259,8 @@ const collisionSystem = initCollisionSystem(
     vitrina2: vitrina2Group,
     vitrina3: vitrina3Group,
     vitrina4: vitrina4Group,
+    vitrina5: vitrina5Group,
+    vitrina6: vitrina6Group,
     vitrinaTall: vitrinaTallGroup,
     tallRadius: tallRadius
   },
@@ -387,14 +400,23 @@ function animate(now){
     trofeoModelRef.current.rotation.y += dt * 0.3; // Rotación más lenta para el trofeo
   }
   
-  // Rotar la Copa Libertadores si está cargada
+  // Rotar las copas duplicadas de la Copa del Mundo si están cargadas
+  if (trofeoModelRef5.current) {
+    trofeoModelRef5.current.rotation.y += dt * 0.3; // Misma velocidad que la original
+  }
+  
+  if (trofeoModelRef6.current) {
+    trofeoModelRef6.current.rotation.y += dt * 0.3; // Misma velocidad que la original
+  }
+  
+  // Rotar la Copa América si está cargada
   if (copaLibertadoresModelRef.current) {
-    copaLibertadoresModelRef.current.rotation.y += dt * 0.25; // Rotación elegante y lenta para la Copa Libertadores
+    copaLibertadoresModelRef.current.rotation.y += dt * 0.25; // Rotación elegante y lenta para la Copa América
   }
 
-  // Rotar la Copa América si está cargada (mismo comportamiento que la Copa Libertadores)
+  // Rotar la Copa América si está cargada
   if (copaAmericaModelRef.current) {
-    copaAmericaModelRef.current.rotation.y += dt * 0.25; // Igual velocidad que la Copa Libertadores
+    copaAmericaModelRef.current.rotation.y += dt * 0.25; // Igual velocidad que la Copa América
   }
 
   // Rotación del escudo central (GLTF si está, si no rotar placeholder)

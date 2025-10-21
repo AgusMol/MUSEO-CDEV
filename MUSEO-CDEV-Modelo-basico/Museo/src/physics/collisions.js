@@ -55,6 +55,28 @@ export function checkVitrinaCollision(newPos, vitrinas, finalBalconyHeight) {
         return true;
       }
     }
+    
+    // Vitrina 5 (Copa del Mundo - Duplicado 1)
+    if (vitrinas.vitrina5) {
+      const vitrina5Pos = vitrinas.vitrina5.position;
+      const vitrina5Size = { x: 0.7, z: 0.7 };
+      const dx5 = Math.abs(newPos.x - vitrina5Pos.x);
+      const dz5 = Math.abs(newPos.z - vitrina5Pos.z);
+      if (dx5 < (vitrina5Size.x / 2 + playerRadius) && dz5 < (vitrina5Size.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
+    
+    // Vitrina 6 (Copa del Mundo - Duplicado 2)
+    if (vitrinas.vitrina6) {
+      const vitrina6Pos = vitrinas.vitrina6.position;
+      const vitrina6Size = { x: 0.7, z: 0.7 };
+      const dx6 = Math.abs(newPos.x - vitrina6Pos.x);
+      const dz6 = Math.abs(newPos.z - vitrina6Pos.z);
+      if (dx6 < (vitrina6Size.x / 2 + playerRadius) && dz6 < (vitrina6Size.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
   }
 
   // Vitrina central cilíndrica (suelo-techo)
