@@ -94,16 +94,12 @@ export function updateAimLabel(getLightSwitchState){
 }
 
 export function showInfo(title, desc){
-  if (!panelElement || !artTitle || !artAuthor || !artDesc) return;
+  if (!panelElement || !artTitle || !artDesc) return;
   
-  // Separar autor/año de la descripción
-  const parts = desc.split('\n\n');
-  const authorInfo = parts[0]; // "Autor · Año"
-  const description = parts[1] || parts[0]; // Descripción completa o texto original si no hay separación
-  
+  // Solo mostrar título y descripción, sin autor
   artTitle.textContent = title;
-  artAuthor.textContent = authorInfo;
-  artDesc.textContent = description;
+  if (artAuthor) artAuthor.textContent = ''; // Limpiar el campo de autor
+  artDesc.textContent = desc;
   panelElement.classList.remove('hidden');
 }
 
