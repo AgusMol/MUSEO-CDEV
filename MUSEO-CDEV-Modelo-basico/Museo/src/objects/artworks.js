@@ -13,7 +13,7 @@ const availableImageFiles = [
   './assets/images/Maradona_copa_del_mundo.png', //4
   './assets/images/mano_dios.jpg', //3
   './assets/images/9.jpeg', //9 - VOLTEADA HORIZONTALMENTE
-  './assets/images/10.jpeg', //10 - VOLTEADA HORIZONTALMENTE
+  './assets/images/palermo.jpg', //10 - VOLTEADA HORIZONTALMENTE
   './assets/images/11.png', //11 - VOLTEADA HORIZONTALMENTE
   './assets/images/2008.jpg', //12 - VOLTEADA HORIZONTALMENTE
   './assets/images/2009.jpg', //13 - VOLTEADA HORIZONTALMENTE
@@ -173,22 +173,22 @@ function buildObrasCatalog() {
     },
     {
       img: availableImageFiles[8], // 9.jpeg
-      title: 'Obra 9',
-      author: 'Autor 9',
-      year: '2000',
+      title: 'Gol de Zanetti vs Inglaterra 1998',
+      author: 'Javier Zanetti',
+      year: '1998',
       desc: ' ... '
     },
     {
       img: availableImageFiles[9], // 10.jpeg
-      title: 'Obra 10',
-      author: 'Autor 10',
-      year: '2002',
+      title: 'Penales errados vs Colombia 1999',
+      author: 'Martín Palermo',
+      year: '1999',
       desc: ' ... '
     },
     {
       img: availableImageFiles[10], // 11.png
-      title: 'Obra 11',
-      author: 'Autor 11',
+      title: 'Gol de Maxi Rodríguez vs México 2006',
+      author: 'Maxi Rodríguez',
       year: '2006',
       desc: ' ... '
     },
