@@ -16,9 +16,10 @@ export function addFrame(scene, interactables, opts){
   artPlane.position.set(0,0,-0.01); artPlane.userData = { title, desc }; artPlane.receiveShadow = true; frameGroup.add(artPlane);
   
   // Voltear horizontalmente las imágenes de la pared del frente y del fondo
-  const shouldFlip = img.includes('1978_2.jpg') || img.includes('1978.jpg') || 
+  const shouldFlip = img.includes('1978_2') || img.includes('1978.') || 
                      img.includes('9.jpeg') || img.includes('10.jpeg') || img.includes('11.png') ||
-                     img.includes('2008.jpg') || img.includes('2009.jpg');
+                     img.includes('2008') || img.includes('2009') ||
+                     img.includes('1998_zanetti') || img.includes('palermo') || img.includes('2006_maxi_rodriguez');
   
   loader.load(img, (texture)=>{ 
     try{ 

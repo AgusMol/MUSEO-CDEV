@@ -4,26 +4,26 @@ import { addFrame } from './frames.js';
 //NO TOCAR EL ORDEN QUE SE ROMPE ABSOLUTAMENTE TODO, RESPETAR LOS NÚMEROS DE LOS COMENTARIOS AL LADO DE CADA CUADRO.
 
 const availableImageFiles = [
-  './assets/images/1978_2.jpg', // 1
-  './assets/images/1978.jpg', // 2
+  './assets/videos/1978_2.mp4', // 1
+  './assets/videos/1978.mp4', // 2
   './assets/videos/cuadro8.mp4', //8
-  './assets/images/1994.jpg', //7
-  './assets/images/1990.jpg', //6
-  './assets/images/1986.jpg', //5
-  './assets/images/Maradona_copa_del_mundo.png', //4
-  './assets/images/mano_dios.jpg', //3
-  './assets/images/9.jpeg', //9
+  './assets/videos/1994.mp4', //7
+  './assets/videos/1990.mp4', //6
+  './assets/videos/1986.mp4', //5
+  './assets/videos/maradona_copa_del_mundo.mp4', //4
+  './assets/videos/mano_dios.mp4', //3
+  './assets/videos/1998_zanetti.mp4', //9
   './assets/images/palermo.jpg', //10
-  './assets/images/11.png', //11
-  './assets/images/2008.jpg', //12
-  './assets/images/2009.jpg', //13
-  './assets/images/2010.jpg', //14
-  './assets/images/2014_heroe.gif', //15
-  './assets/images/final_2014.jpg', //16
-  './assets/images/messi_llorando.jpg', //17
-  './assets/images/2021.jpg', //18
-  './assets/images/Messi_copa_america_2024.png', //20
-  './assets/images/Messi_copa_del_mundo_2022.png', //19
+  './assets/videos/2006_maxi_rodriguez.mp4', //11
+  './assets/videos/2008.mp4', //12
+  './assets/videos/2009.mp4', //13
+  './assets/videos/2010.mp4', //14
+  './assets/videos/2014_heroe.mp4', //15
+  './assets/videos/2014_final.mp4', //16
+  './assets/videos/messi_llorando.mp4', //17
+  './assets/videos/2021.mp4', //18
+  './assets/videos/2024.mp4', //20
+  './assets/videos/2022.mp4', //19
 ];
 
 // Función para crear frame con video
@@ -44,11 +44,11 @@ function addVideoFrame(scene, interactables, opts) {
   // Crear video element
   const video = document.createElement('video');
   video.src = videoSrc;
-  video.loop = true;
-  video.muted = true; // SILENCIADO para evitar sonido de ambiente
+  video.loop = false; // NO SE REPITE - se detiene al finalizar
+  video.muted = false; // CON AUDIO - desmuteado desde el inicio
   video.playsInline = true;
   video.crossOrigin = 'anonymous';
-  video.volume = 0; // Empezamos en 0, se ajusta por distancia
+  video.volume = 0.5; // Volumen inicial al 50%
   video.dataset.baseVolume = '0.5'; // Volumen base (50%)
   video.dataset.hasPlayed = 'false'; // Flag para autoplay
   
@@ -57,6 +57,16 @@ function addVideoFrame(scene, interactables, opts) {
   videoTexture.colorSpace = THREE.SRGBColorSpace;
   videoTexture.minFilter = THREE.LinearFilter;
   videoTexture.magFilter = THREE.LinearFilter;
+  
+  // Voltear horizontalmente los videos de la pared del frente y del fondo
+  const shouldFlip = videoSrc.includes('1978_2') || videoSrc.includes('1978.') || 
+                     videoSrc.includes('2008') || videoSrc.includes('2009') ||
+                     videoSrc.includes('1998_zanetti') || videoSrc.includes('palermo') || videoSrc.includes('2006_maxi_rodriguez');
+  
+  if (shouldFlip) {
+    videoTexture.wrapS = THREE.RepeatWrapping;
+    videoTexture.repeat.x = -1;
+  }
 
   const artMat = new THREE.MeshBasicMaterial({ 
     map: videoTexture,
@@ -172,25 +182,25 @@ function buildObrasCatalog() {
       desc: '22 de junio de 1986, cuartos de final en el Estadio Azteca. Argentina venció 2-1 a Inglaterra en un partido histórico que significó una revancha deportiva tras la Guerra de Malvinas. El primer gol de Maradona, conocido como "La Mano de Dios", fue el más controversial de la historia. Minutos después, el Diego marcó el "Gol del Siglo" en una jugada inolvidable.'
     },
     {
-      img: availableImageFiles[8], // 9.jpeg
+      img: availableImageFiles[8], // 1998_zanetti.mp4
       title: 'Gol de Zanetti vs Inglaterra 1998',
       author: 'Javier Zanetti',
       year: '1998',
-      desc: ' ... '
+      desc: 'Mundial Francia 1998, fase de grupos. Argentina enfrentó a Inglaterra en un partido inolvidable que terminó 2-2 y se definió por penales con victoria argentina 4-3. Javier Zanetti anotó un golazo memorable: recibió la pelota desde un tiro libre, controló y la clavó en un ángulo. Un momento histórico en otro capítulo del clásico rivalidad con los ingleses.'
     },
     {
-      img: availableImageFiles[9], // 10.jpeg
+      img: availableImageFiles[9], // palermo.jpg
       title: 'Penales errados vs Colombia 1999',
       author: 'Martín Palermo',
       year: '1999',
-      desc: ' ... '
+      desc: 'Copa América Colombia 1999, uno de los episodios más dolorosos y recordados del fútbol argentino. En el partido contra Colombia en Bogotá, Martín Palermo erró tres penales en el mismo partido, un récord negativo sin precedentes. A pesar de la angustia y las críticas, el "Titán" Palermo demostró años después su verdadera grandeza al convertirse en ídolo de Boca Juniors y vengarse con goles importantes en la Selección. Una noche para olvidar que forjó el carácter de un verdadero guerrero.'
     },
     {
-      img: availableImageFiles[10], // 11.png
+      img: availableImageFiles[10], // 2006_maxi_rodriguez.mp4
       title: 'Gol de Maxi Rodríguez vs México 2006',
       author: 'Maxi Rodríguez',
       year: '2006',
-      desc: ' ... '
+      desc: 'Mundial Alemania 2006, octavos de final. El 24 de junio en Leipzig, Maxi Rodríguez anotó uno de los goles más espectaculares en la historia de los mundiales. Tras un empate 1-1 en los 120 minutos, en el tiempo suplementario Maxi controló un centro de pecho y ejecutó una volea perfecta desde fuera del área que se clavó en el ángulo. Un golazo de antología que selló el 2-1 ante México y envió a Argentina a cuartos de final. Pura magia celeste y blanca.'
     },
     {
       img: availableImageFiles[11], // 2008.jpg
@@ -262,6 +272,37 @@ function getObra(obrasCatalogo, index) {
   return obrasCatalogo[index % obrasCatalogo.length];
 }
 
+// Función helper para agregar frame (imagen o video automáticamente)
+function addArtwork(scene, interactables, opts) {
+  const { img, title, desc, x, z, face } = opts;
+  
+  // Detectar si es video
+  if (img && img.includes('.mp4')) {
+    const { video } = addVideoFrame(scene, interactables, {
+      x: x,
+      z: z,
+      face: face,
+      videoSrc: img,
+      title: title,
+      desc: desc
+    });
+    
+    // Guardar referencia al video para controles
+    if (!window.museumVideos) window.museumVideos = [];
+    window.museumVideos.push(video);
+  } else {
+    // Es imagen normal
+    addFrame(scene, interactables, {
+      x: x,
+      z: z,
+      face: face,
+      img: img,
+      title: title,
+      desc: desc
+    });
+  }
+}
+
 export function placeArtworks(scene, interactables, ROOM) {
   const obrasCatalogo = buildObrasCatalog();
 
@@ -269,7 +310,7 @@ export function placeArtworks(scene, interactables, ROOM) {
   const posicionesFrente = [-4, -8];
   posicionesFrente.forEach((x, index) => {
     const obra = getObra(obrasCatalogo, index);
-    addFrame(scene, interactables, {
+    addArtwork(scene, interactables, {
       x: x,
       z: ROOM.d/2 - 0.18,
       face: 'frontinicial',
@@ -284,38 +325,21 @@ export function placeArtworks(scene, interactables, ROOM) {
   const posicionesIzquierda = [-12, -8, -4, 0, 4, 8];
   posicionesIzquierda.forEach((z, index) => {
     const obra = getObra(obrasCatalogo, index + 2);
-    
-    // El cuadro 8 está en index + 2 = 2 (índice 0 de la pared izquierda)
-    if (index === 0 && obra.img.includes('.mp4')) {
-      const { video } = addVideoFrame(scene, interactables, {
+    addArtwork(scene, interactables, {
       x: -ROOM.w/2 + 0.18,
       z: z,
       face: 'left',
-      videoSrc: obra.img,
+      img: obra.img,
       title: obra.title,
       desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-      });
-      
-      // Guardar referencia al video para controles
-      if (!window.museumVideos) window.museumVideos = [];
-      window.museumVideos.push(video);
-    } else {
-      addFrame(scene, interactables, {
-        x: -ROOM.w/2 + 0.18,
-        z: z,
-        face: 'left',
-        img: obra.img,
-        title: obra.title,
-        desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-      });
-    }
+    });
   });
 
   // Pared del fondo
   const posicionesFondo = [-8, -4, 0, 4, 8];
   posicionesFondo.forEach((x, index) => {
     const obra = getObra(obrasCatalogo, index + 8);
-    addFrame(scene, interactables, {
+    addArtwork(scene, interactables, {
       x: x,
       z: -ROOM.d/2 + 0.18,
       face: 'back',
@@ -329,7 +353,7 @@ export function placeArtworks(scene, interactables, ROOM) {
   const posicionesDerecha = [-8, -4, 0, 4, 8];
   posicionesDerecha.forEach((z, index) => {
     const obra = getObra(obrasCatalogo, index + 13);
-    addFrame(scene, interactables, {
+    addArtwork(scene, interactables, {
       x: ROOM.w/2 - 0.18,
       z: z,
       face: 'right',
@@ -343,7 +367,7 @@ export function placeArtworks(scene, interactables, ROOM) {
   const posicionesFrente1 = [4, 8];
   posicionesFrente1.forEach((x, index) => {
     const obra = getObra(obrasCatalogo, index + 18);
-    addFrame(scene, interactables, {
+    addArtwork(scene, interactables, {
       x: x,
       z: ROOM.d/2 - 0.18,
       face: 'frontfinal',
