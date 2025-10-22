@@ -120,7 +120,7 @@ export function createVitrinaJabulani2(scene, interactables, x = -7.5, z = 6, ro
   objetoGroup.position.set(0, baseY, 0); group.add(objetoGroup);
   const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=false; group.add(luzObjeto); group.add(luzObjeto.target);
 
-  const placa = createGoldenPlaque("AL RIHLA 2022", "Balón oficial utilizado en la Copa Mundial de la FIFA Qatar 2022. Al Rihla, cuyo nombre significa 'El Viaje' en árabe, fue diseñado por Adidas con una tecnología innovadora que lo convierte en el balón más rápido en la historia de los mundiales. Su diseño aerodinámico y paneles texturizados lo hacen único. Este balón fue testigo del histórico triunfo de Argentina en Qatar.");
+  const placa = createGoldenPlaque("AL RIHLA 2022", "Balón oficial utilizado en la Copa Mundial de la FIFA Qatar 2022. Al Rihla y cuyo nombre significa 'El Viaje' en árabe. Este balón fue testigo del histórico triunfo de Argentina en Qatar.");
   placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
 
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
@@ -198,7 +198,7 @@ export function createVitrinaJabulani3(scene, interactables, x = -7.5, z = 6, ro
   objetoGroup.position.set(0, baseY, 0); group.add(objetoGroup);
   const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=false; group.add(luzObjeto); group.add(luzObjeto.target);
 
-  const placa = createGoldenPlaque("TANGO 1986", "Balón oficial utilizado en la Copa Mundial de la FIFA México 1986. El Adidas Tango fue el primer balón totalmente sintético en una Copa del Mundo, eliminando la absorción de agua y mejorando significativamente su comportamiento en condiciones de lluvia. Su icónico diseño con triadas decorativas se convirtió en símbolo de excelencia. Este balón fue testigo de la legendaria 'Mano de Dios' y el 'Gol del Siglo' de Diego Maradona.");
+  const placa = createGoldenPlaque("TANGO 1986", "Balón oficial utilizado en la Copa Mundial de la FIFA México 1986. El Adidas Tango fue el primer balón totalmente sintético en una Copa del Mundo, eliminando la absorción de agua y mejorando significativamente su comportamiento en condiciones de lluvia. Este balón fue testigo de la legendaria 'Mano de Dios' y el 'Gol del Siglo' de Diego Maradona.");
   placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
 
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
@@ -259,7 +259,7 @@ export function createVitrina2(scene, interactables, x = -7.5, z = 3, rotationY 
   const luzLateral2=new THREE.PointLight(0xffffff, 2.0, 3); luzLateral2.position.set(-0.3, baseY+0.4, -0.3); group.add(luzLateral2);
   const luzAmbientalTrofeo=new THREE.AmbientLight(0xffffff, 0.4); group.add(luzAmbientalTrofeo);
 
-  const placa = createGoldenPlaque("COPA MUNDIAL FIFA 1986", "Réplica oficial del trofeo más codiciado del fútbol mundial. La Copa del Mundo FIFA, también conocida como el Trofeo Jules Rimet hasta 1970, representa la máxima distinción en el fútbol internacional. Diseñado por el artista italiano Silvio Gazzaniga en 1974, está hecho de oro macizo de 18 quilates y pesa 6.142 kg. En su base circular se graban los nombres de los países campeones, siendo Brasil el único pentacampeón mundial.");
+  const placa = createGoldenPlaque("COPA MUNDIAL FIFA 1986", "Réplica oficial del trofeo más codiciado del fútbol mundial. La Copa del Mundo FIFA, representa la máxima distinción en el fútbol internacional. Diseñado por el artista italiano Silvio Gazzaniga en 1974, está hecho de oro macizo de 18 quilates y pesa 6.142 kg. En su base circular se graban los nombres de los países campeones.");
   placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
 
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
@@ -283,7 +283,7 @@ export function createVitrinaLibertadores(scene, interactables, x = -7.5, z = 0,
   const l1=new THREE.PointLight(0xffffff, 2.5, 4); l1.position.set(0.3, baseY + glassH * 0.6, 0.3); group.add(l1);
   const l2=new THREE.PointLight(0xffffff, 2.0, 4); l2.position.set(-0.3, baseY + glassH * 0.6, -0.3); group.add(l2);
   const amb=new THREE.AmbientLight(0xffffff, 0.4); group.add(amb);
-  const placa = createGoldenPlaque("COPA AMÉRICA 2021", "Trofeo de la Copa AMÉRICA 2021. Información editable por el usuario."); placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
+  const placa = createGoldenPlaque("COPA AMÉRICA 2021", "Trofeo de la Copa AMÉRICA 2021."); placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
   return { group, baseY, glassH, copaModelRef: modelRef, luces: { spot, l1, l2 } };
 }
@@ -305,7 +305,7 @@ export function createVitrinaAmerica(scene, interactables, x = -7.5, z = -3, rot
   const l1=new THREE.PointLight(0xffffff, 2.5, 4); l1.position.set(0.3, baseY + glassH * 0.6, 0.3); group.add(l1);
   const l2=new THREE.PointLight(0xffffff, 2.0, 4); l2.position.set(-0.3, baseY + glassH * 0.6, -0.3); group.add(l2);
   const amb=new THREE.AmbientLight(0xffffff, 0.4); group.add(amb);
-  const placa = createGoldenPlaque("COPA AMÉRICA 2024", "Trofeo de la Copa AMÉRICA 2024. Información editable por el usuario."); placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
+  const placa = createGoldenPlaque("COPA AMÉRICA 2024", "Trofeo de la Copa AMÉRICA 2024."); placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
   return { group, baseY, glassH, copaModelRef: modelRef, luces: { spot, l1, l2 } };
 }
@@ -380,7 +380,7 @@ export function createVitrinaWorldCup3(scene, interactables, x = 5, z = 5, rotat
   const luzLateral2=new THREE.PointLight(0xffffff, 2.0, 3); luzLateral2.position.set(-0.3, baseY+0.4, -0.3); group.add(luzLateral2);
   const luzAmbientalTrofeo=new THREE.AmbientLight(0xffffff, 0.4); group.add(luzAmbientalTrofeo);
 
-  const placa = createGoldenPlaque("COPA MUNDIAL FIFA 1978", "Réplica oficial del trofeo más codiciado del fútbol mundial. La Copa del Mundo FIFA, también conocida como el Trofeo Jules Rimet hasta 1970, representa la máxima distinción en el fútbol internacional. Diseñado por el artista italiano Silvio Gazzaniga en 1974, está hecho de oro macizo de 18 quilates y pesa 6.142 kg. En su base circular se graban los nombres de los países campeones, siendo Brasil el único pentacampeón mundial.");
+  const placa = createGoldenPlaque("COPA MUNDIAL FIFA 1978", "Réplica oficial del trofeo de la FIFA 1978. La Copa del Mundo FIFA, también conocida como el Trofeo Jules Rimet hasta 1970, representa la máxima distinción en el fútbol internacional. Diseñado por el artista italiano Silvio Gazzaniga en 1974, está hecho de oro macizo de 18 quilates y pesa 6.142 kg. En su base circular se graban los nombres de los países campeones.");
   placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
 
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
@@ -437,7 +437,7 @@ export function createVitrinaWorldCup4(scene, interactables, x = 7, z = 7, rotat
   const luzLateral2=new THREE.PointLight(0xffffff, 2.0, 3); luzLateral2.position.set(-0.3, baseY+0.4, -0.3); group.add(luzLateral2);
   const luzAmbientalTrofeo=new THREE.AmbientLight(0xffffff, 0.4); group.add(luzAmbientalTrofeo);
 
-  const placa = createGoldenPlaque("COPA MUNDIAL FIFA 2022", "Réplica oficial del trofeo más codiciado del fútbol mundial. La Copa del Mundo FIFA, también conocida como el Trofeo Jules Rimet hasta 1970, representa la máxima distinción en el fútbol internacional. Diseñado por el artista italiano Silvio Gazzaniga en 1974, está hecho de oro macizo de 18 quilates y pesa 6.142 kg. En su base circular se graban los nombres de los países campeones, siendo Brasil el único pentacampeón mundial.");
+  const placa = createGoldenPlaque("COPA MUNDIAL FIFA 2022", "Réplica oficial del trofeo más codiciado del fútbol mundial.");
   placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
 
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);

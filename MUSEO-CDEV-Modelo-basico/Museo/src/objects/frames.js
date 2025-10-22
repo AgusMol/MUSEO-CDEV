@@ -14,7 +14,24 @@ export function addFrame(scene, interactables, opts){
   const artMat = new THREE.MeshBasicMaterial({ color: 0xdddddd, side: THREE.DoubleSide });
   const artPlane = new THREE.Mesh(new THREE.PlaneGeometry(artWidth, artHeight), artMat);
   artPlane.position.set(0,0,-0.01); artPlane.userData = { title, desc }; artPlane.receiveShadow = true; frameGroup.add(artPlane);
-  loader.load(img, (texture)=>{ try{ texture.colorSpace=THREE.SRGBColorSpace; artPlane.material.map=texture; artPlane.material.color.setHex(0xffffff); artPlane.material.needsUpdate=true; }catch(e){} }, undefined, ()=>{
+  
+  // Voltear horizontalmente las imágenes de la pared del frente y del fondo
+  const shouldFlip = img.includes('1978_2.jpg') || img.includes('1978.jpg') || 
+                     img.includes('9.jpeg') || img.includes('10.jpeg') || img.includes('11.png') ||
+                     img.includes('2008.jpg') || img.includes('2009.jpg');
+  
+  loader.load(img, (texture)=>{ 
+    try{ 
+      texture.colorSpace=THREE.SRGBColorSpace; 
+      if (shouldFlip) {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.repeat.x = -1;
+      }
+      artPlane.material.map=texture; 
+      artPlane.material.color.setHex(0xffffff); 
+      artPlane.material.needsUpdate=true; 
+    }catch(e){} 
+  }, undefined, ()=>{
     loader.load('./assets/textures/colonCampeon.jpg', (fallback)=>{ try{ fallback.colorSpace=THREE.SRGBColorSpace; artPlane.material.map=fallback; artPlane.material.color.setHex(0xffffff); artPlane.material.needsUpdate=true; }catch(e){} }, undefined, ()=>{ artPlane.material.color.setHex(0x888888); artPlane.material.needsUpdate=true; });
   });
 
