@@ -5,9 +5,10 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4, createVitrinaJabulani2, createVitrinaJabulani3, createVitrinaMedallaOlimpica } from './src/objects/vitrinas.js';
 // addFrame ahora es usado internamente por módulos; no se importa aquí
 import { createGoldenPlaque } from './src/ui/plaques.js';
-import { initControls, getMoveState, isCrouching, setCrouching, isPointerLocked } from './src/controls/input.js';
+import { initControls, getMoveState, isPointerLocked } from './src/controls/input.js';
 import { initHotbar, setHotbarSlot, scrollHotbar, updateHotbar } from './src/ui/hotbar.js';
 import { initRaycast, tryOpenInfo, updateAimLabel, getRaycaster } from './src/ui/raycastInfo.js';
+import { initVideoControls, checkVideoProximity } from './src/ui/videoControls.js';
 import { initLightSwitch, getLightSwitchModel, toggleLightSwitch } from './src/objects/lightSwitch.js';
 import { initRopeBarriers, checkRopeBarrierCollision as checkRopeBarrierCollisionModule } from './src/objects/ropeBarriers.js';
 import { ropeBarrierPositions } from './src/objects/ropeBarrierLayout.js';
@@ -17,6 +18,7 @@ import { createSecondFloor } from './src/world/secondFloor.js';
 import { initCollisionSystem } from './src/physics/collisions.js';
 import { initLightingSystem, createCeiling } from './src/world/lighting.js';
 import { createSmallRoom } from './src/world/smallRoom.js';
+import { initSmallRoomAudio, updateSmallRoomAudio } from './src/audio/smallRoomAmbient.js';
 console.log('🚀 Iniciando museo virtual...');
 const CANVAS = document.getElementById("miCanvas");
 console.log('📺 Canvas encontrado:', CANVAS);
@@ -93,8 +95,7 @@ camera.position.set(0, 1.6, ROOM.d/2 + 8 - 1.5); // centrado, altura normal, fon
 
 const renderer = new THREE.WebGLRenderer({ canvas: CANVAS, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = false;
 console.log('🎥 Renderer inicializado');
 
 // Agregar escena al DOM si no está
@@ -132,7 +133,6 @@ const floorMaterial = new THREE.MeshStandardMaterial({
 const mainFloor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.w, ROOM.d), floorMaterial);
 mainFloor.rotation.x = -Math.PI/2;
 mainFloor.position.set(0, 0, 0);
-mainFloor.receiveShadow = true;
 mainFloor.name = 'mainFloor';
 room.add(mainFloor);
 
@@ -198,14 +198,25 @@ const dintel = new THREE.Mesh(
   wallMat
 );
 dintel.position.set(DOOR.centerX, finalBalconyHeight - lintelH/2, ROOM.d/2);
-dintel.castShadow = true;
-dintel.receiveShadow = true;
 
 room.add(wallFrontLeft, wallFrontRight, wallFrontUpper, jambaIzq, jambaDer, dintel);
 
 // ======== Sala pequeña (modular) ========
 const SMALL = { w: 8, h: finalBalconyHeight, d: 8 };
-const { group: smallRoom } = createSmallRoom(scene, ROOM, wallMat, floorMaterial, { ...SMALL, doorHeight: finalBalconyHeight });
+const { group: smallRoom } = createSmallRoom(scene, ROOM, wallMat, floorMaterial, { ...SMALL, doorHeight: 3.75 });
+
+// ======== Audio ambiental de la sala pequeña ========
+// Configuración de la sala pequeña para detección de audio espacial
+const smallRoomConfig = {
+  centerX: 0,
+  centerZ: ROOM.d/2 + SMALL.d/2,
+  width: SMALL.w,
+  depth: SMALL.d
+};
+
+// Audio espacial 3D - alcance muy reducido, solo cerca de la sala
+// El tercer parámetro es la distancia máxima de audición (8 unidades)
+const smallRoomAudio = initSmallRoomAudio('./assets/audio/audio.mp3', 0.4, 8);
 
 // (Removed legacy interactive door and its hidden reception)
 
@@ -379,6 +390,9 @@ initRaycast(camera, interactables, {
   checkInterruptor: isInterruptorFocused
 });
 
+// ======== Controles de video ========
+initVideoControls();
+
 // ======== Interruptor de luz ========
 // Cargar el modelo y ubicarlo en la pared del frente cerca de la entrada
 initLightSwitch(scene, {
@@ -402,6 +416,10 @@ function animate(now){
   if (isPointerLocked()){
     movePlayer(dt);
     updateAimLabel(() => lucesPrendidas);
+    checkVideoProximity(camera, interactables);
+    
+    // Actualizar audio ambiental de la sala pequeña
+    updateSmallRoomAudio(camera, smallRoomConfig);
   }
   // (removed legacy door animation)
 
@@ -491,6 +509,7 @@ window.addEventListener('resize', ()=>{
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+/* ===== MÚSICA DE FONDO DE YOUTUBE DESACTIVADA =====
 // Crear el controlador (tu video de 1 hora)
 const bgm = createYouTubeBgm({
   videoId: '8Gk-lP0JtjQ',  // <-- este es el link que pasaste
@@ -498,10 +517,17 @@ const bgm = createYouTubeBgm({
   size: 'micro',           // 1x1 px visible
 });
 
-const canvas = document.getElementById('miCanvas');
-canvas.addEventListener('click', () => {
-  // acá ya hacés pointer-lock si corresponde
-  bgm.start();             // inicia la música
+// Iniciar música después de un delay para evitar conflictos con pointer lock
+let musicStarted = false;
+document.addEventListener('click', () => {
+  if (!musicStarted) {
+    musicStarted = true;
+    setTimeout(() => {
+      bgm.start().catch(err => {
+        console.log('No se pudo iniciar música automáticamente:', err);
+      });
+    }, 100);
+  }
 }, { once: true });
 
 // Atajos opcionales
@@ -510,3 +536,4 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'Equal' || e.code === 'ArrowUp') bgm.setVolume( Math.min(100, 35) );
   if (e.code === 'Minus' || e.code === 'ArrowDown') bgm.setVolume( Math.max(0, 15) );
 });
+========== FIN MÚSICA DE FONDO DESACTIVADA ========== */

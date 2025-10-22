@@ -5,8 +5,7 @@ const state = {
   pointerLocked: false,
   move: { f: false, b: false, l: false, r: false, up: false, run: false },
   yaw: 0,
-  pitch: 0,
-  crouching: false
+  pitch: 0
 };
 
 // Callbacks externos
@@ -72,7 +71,6 @@ export function initControls(canvas, camera, options = {}) {
     if (e.code === 'KeyD') state.move.r = true;
     if (e.code === 'Space') state.move.up = true;
     if (e.code === 'ShiftLeft') state.move.run = true;
-    if (e.code === 'KeyQ') state.crouching = true;
 
     // Interacción
     if (e.code === 'KeyE' && onInteract) {
@@ -95,7 +93,6 @@ export function initControls(canvas, camera, options = {}) {
     if (e.code === 'KeyD') state.move.r = false;
     if (e.code === 'Space') state.move.up = false;
     if (e.code === 'ShiftLeft') state.move.run = false;
-    if (e.code === 'KeyQ') state.crouching = false;
   });
 
   // Mouse wheel para hotbar
@@ -121,14 +118,6 @@ export function isPointerLocked() {
 
 export function getMoveState() {
   return state.move;
-}
-
-export function isCrouching() {
-  return state.crouching;
-}
-
-export function setCrouching(value) {
-  state.crouching = value;
 }
 
 export function getYaw() {

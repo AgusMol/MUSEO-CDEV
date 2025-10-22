@@ -1,10 +1,9 @@
 import * as THREE from 'three';
-import { getMoveState, isCrouching } from '../controls/input.js';
+import { getMoveState } from '../controls/input.js';
 
 export function initMovement({ camera, ROOM, SMALL, DOOR, finalBalconyHeight, balconyWidth, stairGeom, checkers }) {
   const GRAVITY = 18, JUMP = 5;
   const STAND_HEIGHT = 1.6;
-  const CROUCH_HEIGHT = 1.0;
 
   const direction = new THREE.Vector3();
 
@@ -16,7 +15,6 @@ export function initMovement({ camera, ROOM, SMALL, DOOR, finalBalconyHeight, ba
 
   function movePlayer(dt) {
     const move = getMoveState();
-    const crouching = isCrouching();
 
     direction.set(0,0,0);
     const speed = (move.run ? 6 : 3.2);
@@ -56,7 +54,7 @@ export function initMovement({ camera, ROOM, SMALL, DOOR, finalBalconyHeight, ba
     if (wasInMain && newPosition.z >= wallZ - playerRadius) {
       if (!(withinDoorXNewPos && withinDoorYCurrent)) wallCollision = true;
     }
-    if (wasInsideSmall && newPosition.z <= wallZ - playerRadius) {
+    if (wasInsideSmall && newPosition.z <= wallZ + playerRadius) {
       if (!(withinDoorXNewPos && withinDoorYCurrent)) wallCollision = true;
     }
 
@@ -64,9 +62,24 @@ export function initMovement({ camera, ROOM, SMALL, DOOR, finalBalconyHeight, ba
       const pr = playerRadius;
       const insideSmall = newPosition.z > wallZ + pr;
       if (insideSmall) {
-        // Sin límites internos en la sala pequeña. Solo evitar cruzar la pared frontal fuera del hueco de la puerta.
-        const withinDoorX = (newPosition.x > doorMinX - doorXTolerance && newPosition.x < doorMaxX + doorXTolerance);
-        if (newPosition.z <= wallZ + pr && !(withinDoorX && withinDoorYCurrent)) newPosition.z = wallZ + pr;
+        // Colisiones de la sala pequeña
+        const smallRoomHalfW = SMALL.w / 2;
+        const smallRoomBackZ = wallZ + SMALL.d;
+        
+        // Pared trasera de la sala pequeña
+        if (newPosition.z >= smallRoomBackZ - pr) {
+          newPosition.z = smallRoomBackZ - pr;
+        }
+        
+        // Pared izquierda de la sala pequeña
+        if (newPosition.x <= -smallRoomHalfW + pr) {
+          newPosition.x = -smallRoomHalfW + pr;
+        }
+        
+        // Pared derecha de la sala pequeña
+        if (newPosition.x >= smallRoomHalfW - pr) {
+          newPosition.x = smallRoomHalfW - pr;
+        }
       }
     }
 
@@ -78,7 +91,7 @@ export function initMovement({ camera, ROOM, SMALL, DOOR, finalBalconyHeight, ba
     function getFloorHeight(x, z) {
       let floorHeight = 0;
       const playerCurrentY = camera.position.y;
-      const basePlayerHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
+      const basePlayerHeight = STAND_HEIGHT;
 
       const stairCenterX = 0;
       const stairStartZ = stairOffset + stairLength/2;
@@ -112,7 +125,7 @@ export function initMovement({ camera, ROOM, SMALL, DOOR, finalBalconyHeight, ba
     }
 
     const currentFloorHeight = getFloorHeight(camera.position.x, camera.position.z);
-    const basePlayerHeight = crouching ? CROUCH_HEIGHT : STAND_HEIGHT;
+    const basePlayerHeight = STAND_HEIGHT;
     const targetHeight = currentFloorHeight + basePlayerHeight;
 
     if (move.up && onFloor){ vy = JUMP; onFloor=false; }
@@ -123,25 +136,6 @@ export function initMovement({ camera, ROOM, SMALL, DOOR, finalBalconyHeight, ba
       camera.position.y = targetHeight;
       vy = 0;
       onFloor = true;
-    }
-
-    const balconyHeight = finalBalconyHeight;
-    const onBalcony = (
-      Math.abs(camera.position.x) <= ROOM.w/2 && camera.position.z >= ROOM.d/2 - balconyWidth && camera.position.z <= ROOM.d/2
-    ) || (
-      Math.abs(camera.position.x) <= ROOM.w/2 && camera.position.z >= -ROOM.d/2 && camera.position.z <= -ROOM.d/2 + balconyWidth
-    ) || (
-      camera.position.x >= -ROOM.w/2 && camera.position.x <= -ROOM.w/2 + balconyWidth && Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
-    ) || (
-      camera.position.x >= ROOM.w/2 - balconyWidth && camera.position.x <= ROOM.w/2 && Math.abs(camera.position.z) <= (ROOM.d - balconyWidth*2)/2
-    );
-    if (crouching && onBalcony) {
-      const minBalconyY = balconyHeight + CROUCH_HEIGHT;
-      if (camera.position.y < minBalconyY) {
-        camera.position.y = minBalconyY;
-        vy = 0;
-        onFloor = true;
-      }
     }
   }
 

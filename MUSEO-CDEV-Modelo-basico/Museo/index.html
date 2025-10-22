@@ -65,6 +65,27 @@
       <p id="art-author" class="art-author"></p>
       <p id="art-desc"></p>
     </div>
+    <div id="video-controls">
+      <h3>📹 Control de Video</h3>
+      <div class="video-control-row">
+        <button class="video-btn" id="video-play">▶ Play</button>
+        <button class="video-btn" id="video-pause">⏸ Pause</button>
+        <button class="video-btn" id="video-mute">🔇 Mute</button>
+      </div>
+      <div class="video-control-row">
+        <span class="video-time" id="video-current">0:00</span>
+        <input type="range" class="video-slider" id="video-progress" min="0" max="100" value="0" step="0.1">
+        <span class="video-time" id="video-duration">0:00</span>
+      </div>
+      <div class="video-control-row">
+        <span style="font-size:0.8rem;color:#fff;min-width:60px">🔊 Vol:</span>
+        <input type="range" class="video-slider" id="video-volume" min="0" max="100" value="50" step="1">
+        <span class="video-time" id="video-volume-label">50%</span>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.75rem;color:rgba(255,255,255,0.7);text-align:center">
+        <strong>⌨️ Atajos:</strong> P=Play/Pause · M=Mute · ←→=±5s · ↑↓=Vol · 0/Home=Inicio · End=Final
+      </div>
+    </div>
   </div>
 
   <canvas id="miCanvas"></canvas>

@@ -6,7 +6,7 @@ import { addFrame } from './frames.js';
 const availableImageFiles = [
   './assets/images/1978_2.jpg', // 1
   './assets/images/1978.jpg', // 2
-  './assets/images/8.jpeg', //8
+  './assets/videos/cuadro8.mp4', //8 - VIDEO (Maradona)
   './assets/images/1994.jpg', //7
   './assets/images/1990.jpg', //6
   './assets/images/mano_dios.jpg', //5
@@ -25,6 +25,91 @@ const availableImageFiles = [
   './assets/images/Messi_copa_america_2024.png', //20
   './assets/images/Messi_copa_del_mundo_2022.png', //19
 ];
+
+// Función para crear frame con video
+function addVideoFrame(scene, interactables, opts) {
+  const { x, y, z, face, videoSrc, title, desc } = opts;
+  const frameGroup = new THREE.Group();
+  frameGroup.position.set(x, y || 1.7, z);
+  
+  if (face === 'back') frameGroup.rotation.y = Math.PI;
+  if (face === 'left') frameGroup.rotation.y = Math.PI/2;
+  if (face === 'right') frameGroup.rotation.y = -Math.PI/2;
+  if (face === 'front' || face === 'frontinicial' || face === 'frontfinal') frameGroup.rotation.y = 0;
+
+  const artWidth = 1.8, artHeight = 1.2, frameThickness = 0.08;
+  const barDepth = frameThickness;
+  const barZ = 0.01;
+
+  // Crear video element
+  const video = document.createElement('video');
+  video.src = videoSrc;
+  video.loop = true;
+  video.muted = true; // SILENCIADO para evitar sonido de ambiente
+  video.playsInline = true;
+  video.crossOrigin = 'anonymous';
+  video.volume = 0; // Empezamos en 0, se ajusta por distancia
+  video.dataset.baseVolume = '0.5'; // Volumen base (50%)
+  video.dataset.hasPlayed = 'false'; // Flag para autoplay
+  
+  // Crear textura de video
+  const videoTexture = new THREE.VideoTexture(video);
+  videoTexture.colorSpace = THREE.SRGBColorSpace;
+  videoTexture.minFilter = THREE.LinearFilter;
+  videoTexture.magFilter = THREE.LinearFilter;
+
+  const artMat = new THREE.MeshBasicMaterial({ 
+    map: videoTexture,
+    side: THREE.DoubleSide 
+  });
+  
+  const artPlane = new THREE.Mesh(new THREE.PlaneGeometry(artWidth, artHeight), artMat);
+  artPlane.position.set(0, 0, -0.01);
+  artPlane.userData = { title, desc, isVideo: true, video: video };
+  frameGroup.add(artPlane);
+
+  // Marco dorado
+  const frameMat = new THREE.MeshStandardMaterial({ 
+    color: 0xB8860B, 
+    metalness: 0.7, 
+    roughness: 0.25 
+  });
+  
+  const halfW = artWidth/2, halfH = artHeight/2;
+  
+  const topBar = new THREE.Mesh(
+    new THREE.BoxGeometry(artWidth + frameThickness*2, frameThickness, barDepth), 
+    frameMat
+  );
+  topBar.position.set(0, halfH + frameThickness/2, barZ);
+  frameGroup.add(topBar);
+  
+  const bottomBar = topBar.clone();
+  bottomBar.position.set(0, -halfH - frameThickness/2, barZ);
+  frameGroup.add(bottomBar);
+  
+  const leftBar = new THREE.Mesh(
+    new THREE.BoxGeometry(frameThickness, artHeight, barDepth), 
+    frameMat
+  );
+  leftBar.position.set(-halfW - frameThickness/2, 0, barZ);
+  frameGroup.add(leftBar);
+  
+  const rightBar = leftBar.clone();
+  rightBar.position.set(halfW + frameThickness/2, 0, barZ);
+  frameGroup.add(rightBar);
+
+  // Luz
+  const obraLight = new THREE.PointLight(0xffffff, 1.2, 6);
+  obraLight.position.set(0, 0.6, 1.5);
+  frameGroup.add(obraLight);
+
+  frameGroup.userData = { title, desc, isVideo: true, video: video };
+  scene.add(frameGroup);
+  interactables.push(frameGroup);
+  
+  return { frameGroup, video };
+}
 
 function buildObrasCatalog(count) {
   const catalog = [];
@@ -67,14 +152,31 @@ export function placeArtworks(scene, interactables, ROOM) {
   const posicionesIzquierda = [-12, -8, -4, 0, 4, 8];
   posicionesIzquierda.forEach((z, index) => {
     const obra = getObra(obrasCatalogo, index + 2);
-    addFrame(scene, interactables, {
-      x: -ROOM.w/2 + 0.18,
-      z: z,
-      face: 'left',
-      img: obra.img,
-      title: obra.title,
-      desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-    });
+    
+    // El cuadro 8 está en index + 2 = 2 (índice 0 de la pared izquierda)
+    if (index === 0 && obra.img.includes('.mp4')) {
+      const { video } = addVideoFrame(scene, interactables, {
+        x: -ROOM.w/2 + 0.18,
+        z: z,
+        face: 'left',
+        videoSrc: obra.img,
+        title: 'Video Histórico',
+        desc: 'Momentos inolvidables del fútbol argentino'
+      });
+      
+      // Guardar referencia al video para controles
+      if (!window.museumVideos) window.museumVideos = [];
+      window.museumVideos.push(video);
+    } else {
+      addFrame(scene, interactables, {
+        x: -ROOM.w/2 + 0.18,
+        z: z,
+        face: 'left',
+        img: obra.img,
+        title: obra.title,
+        desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
+      });
+    }
   });
 
   // Pared del fondo
