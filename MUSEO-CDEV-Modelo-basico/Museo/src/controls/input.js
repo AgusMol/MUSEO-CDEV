@@ -27,9 +27,27 @@ export function initControls(canvas, camera, options = {}) {
   onToggleLight = onToggleLightCallback;
   onHotbarChange = onHotbarChangeCallback;
 
-  // Pointer lock
+  // Pointer lock con manejo de errores
   function lockPointer() {
-    canvas.requestPointerLock();
+    // Verificar que el canvas esté en el documento antes de solicitar pointer lock
+    if (!document.body.contains(canvas)) {
+      console.warn('Canvas no está en el documento, no se puede bloquear el puntero');
+      return;
+    }
+    
+    try {
+      const promise = canvas.requestPointerLock();
+      // requestPointerLock puede retornar una Promise en navegadores modernos
+      if (promise && promise.catch) {
+        promise.catch((err) => {
+          // Silenciar el error WrongDocumentError y otros errores de pointer lock
+          console.debug('No se pudo bloquear el puntero:', err.name);
+        });
+      }
+    } catch (err) {
+      // Manejar errores síncronos
+      console.debug('Error al solicitar pointer lock:', err.name);
+    }
   }
 
   document.addEventListener('pointerlockchange', () => {
