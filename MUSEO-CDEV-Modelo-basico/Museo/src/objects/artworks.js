@@ -4,19 +4,19 @@ import { addFrame } from './frames.js';
 //NO TOCAR EL ORDEN QUE SE ROMPE ABSOLUTAMENTE TODO, RESPETAR LOS NÚMEROS DE LOS COMENTARIOS AL LADO DE CADA CUADRO.
 
 const availableImageFiles = [
-  './assets/images/1978_2.jpg', // 1 - VOLTEADA HORIZONTALMENTE
-  './assets/images/1978.jpg', // 2 - VOLTEADA HORIZONTALMENTE
-  './assets/videos/cuadro8.mp4', //8 - VIDEO (Maradona)
+  './assets/images/1978_2.jpg', // 1
+  './assets/images/1978.jpg', // 2
+  './assets/videos/cuadro8.mp4', //8
   './assets/images/1994.jpg', //7
   './assets/images/1990.jpg', //6
   './assets/images/1986.jpg', //5
   './assets/images/Maradona_copa_del_mundo.png', //4
   './assets/images/mano_dios.jpg', //3
-  './assets/images/9.jpeg', //9 - VOLTEADA HORIZONTALMENTE
-  './assets/images/palermo.jpg', //10 - VOLTEADA HORIZONTALMENTE
-  './assets/images/11.png', //11 - VOLTEADA HORIZONTALMENTE
-  './assets/images/2008.jpg', //12 - VOLTEADA HORIZONTALMENTE
-  './assets/images/2009.jpg', //13 - VOLTEADA HORIZONTALMENTE
+  './assets/images/9.jpeg', //9
+  './assets/images/palermo.jpg', //10
+  './assets/images/11.png', //11
+  './assets/images/2008.jpg', //12
+  './assets/images/2009.jpg', //13
   './assets/images/2010.jpg', //14
   './assets/images/2014_heroe.gif', //15
   './assets/images/final_2014.jpg', //16
