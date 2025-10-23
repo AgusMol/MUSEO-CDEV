@@ -142,63 +142,56 @@ export function createVitrinaJabulani3(scene, interactables, x = -7.5, z = 6, ro
   const objetoGroup = new THREE.Group(); const pedestalInterno = new THREE.Mesh(new THREE.CylinderGeometry(0.20,0.20,0.15,32), new THREE.MeshStandardMaterial({ color:0x1a1a1a, metalness:0.4, roughness:0.6 })); pedestalInterno.position.y=0.075; pedestalInterno.castShadow=pedestalInterno.receiveShadow=true; objetoGroup.add(pedestalInterno);
   const modelRef = { current: null };
   
-  // Cargar modelo GLTF de tango_1986
+  // Cargar modelo GLTF de Tango 78
   const gltfLoader = new GLTFLoader();
-  gltfLoader.load('/assets/models/tango_1986/scene.gltf', (gltf) => {
+  gltfLoader.load('/assets/models/1978_world_cup_argentina_-_tango_78/scene.gltf', (gltf) => {
     const tangoModel = gltf.scene;
     
-    // Calcular bounding box original
-    const box = new THREE.Box3().setFromObject(tangoModel);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const targetSize = 0.30; // Mismo diámetro que la Jabulani (radio 0.15)
-    const scale = targetSize / maxDim;
-    
-    // Crear un grupo wrapper que estará centrado
-    const tangoWrapper = new THREE.Group();
-    
-    // Aplicar escala al modelo
-    tangoModel.scale.setScalar(scale);
-    
-    // Mover el modelo para que su centro esté en el origen del wrapper
-    tangoModel.position.set(
-      -center.x * scale,
-      -center.y * scale,
-      -center.z * scale
-    );
-    tangoModel.rotation.set(0, 0, -Math.PI/2);
-    
-    // Configurar materiales y sombras
+    // El modelo tiene 2 pelotas, vamos a mostrar solo una
+    let pelotaCount = 0;
     tangoModel.traverse((node) => {
       if (node.isMesh) {
-        node.castShadow = true;
-        node.receiveShadow = true;
-        if (node.material) {
-          if (node.material.map) {
-            try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+        pelotaCount++;
+        // Ocultar la segunda pelota (mantener solo la primera)
+        if (pelotaCount > 1) {
+          node.visible = false;
+        } else {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          if (node.material) {
+            if (node.material.map) {
+              try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+            }
           }
         }
       }
     });
     
-    // Agregar el modelo al wrapper
-    tangoWrapper.add(tangoModel);
+    // Calcular bounding box de lo que queda visible
+    const box = new THREE.Box3().setFromObject(tangoModel);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const targetSize = 0.75; // Mismo tamaño que Jabulani y Pelota 2022
+    const scale = targetSize / maxDim;
     
-    // Posicionar el wrapper centrado (ajuste manual en X y Z para compensar descentrado del modelo)
-    tangoWrapper.position.set(-0.2, 0.475, 0);
+    // Aplicar escala al modelo
+    tangoModel.scale.setScalar(scale);
     
-    objetoGroup.add(tangoWrapper);
-    modelRef.current = tangoWrapper;
-    console.log('✅ Tango 1986 cargado en vitrina Jabulani3');
+    // Posicionar
+    tangoModel.position.set(-0.36, 0.31, 0);
+    tangoModel.rotation.set(0, 1.5, 0);
+    
+    objetoGroup.add(tangoModel);
+    modelRef.current = tangoModel;
+    console.log('✅ Tango 78 cargado en vitrina Jabulani3 (mostrando 1 de 2 pelotas)');
   }, undefined, (error) => {
-    console.error('❌ Error cargando tango_1986 GLTF:', error);
+    console.error('❌ Error cargando Tango 78 GLTF:', error);
   });
   
   objetoGroup.position.set(0, baseY, 0); group.add(objetoGroup);
   const luzObjeto = new THREE.SpotLight(0xffffff, 2.5, 6, Math.PI/8, 0.3, 1); luzObjeto.position.set(0, baseY + vitH + 1, 0); luzObjeto.target.position.set(0, baseY + 0.2, 0); luzObjeto.castShadow=false; group.add(luzObjeto); group.add(luzObjeto.target);
 
-  const placa = createGoldenPlaque("TANGO 1986", "Balón oficial utilizado en la Copa Mundial de la FIFA México 1986. El Adidas Tango fue el primer balón totalmente sintético en una Copa del Mundo, eliminando la absorción de agua y mejorando significativamente su comportamiento en condiciones de lluvia. Este balón fue testigo de la legendaria 'Mano de Dios' y el 'Gol del Siglo' de Diego Maradona.");
+  const placa = createGoldenPlaque("TANGO 1978", "Balón oficial utilizado en la Copa Mundial de la FIFA Argentina 1978. El Adidas Tango revolucionó el diseño de balones de fútbol con sus icónicos triángulos negros que creaban una ilusión de círculos perfectos. Este modelo introdujo un diseño que se convertiría en el estándar por más de dos décadas. Con este balón, Argentina conquistó su primer título mundial, venciendo 3-1 a Holanda en la final disputada en el Estadio Monumental de Buenos Aires.");
   placa.position.set(0.37, 0.9, 0); placa.rotation.set(0, -Math.PI/2, Math.PI); group.add(placa); interactables.push(placa);
 
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
@@ -318,14 +311,16 @@ export function createVitrinaCentralEscudo(scene, interactables, ROOM, x = 0, z 
   const tallGlass = new THREE.Mesh(new THREE.CylinderGeometry(tallRadius, tallRadius, tallGlassHeight, 64, 1, true), glassMat); tallGlass.position.y=tallGlassHeight/2; tallGlass.castShadow=false; tallGlass.receiveShadow=true; group.add(tallGlass);
   const topRing = new THREE.Mesh(new THREE.TorusGeometry(tallRadius+0.02, 0.04, 16, 100), marcoMaterial); topRing.rotation.x = Math.PI/2; topRing.position.y = tallGlassHeight; group.add(topRing);
   const ceilingLight = new THREE.SpotLight(0xffffff, 3.5, ROOM.h, Math.PI/6, 0.08, 1); ceilingLight.position.set(0, tallGlassHeight + 0.3, 0); ceilingLight.target.position.set(0, 0.6, 0); ceilingLight.castShadow=false; group.add(ceilingLight); group.add(ceilingLight.target);
-  const innerPlatform = new THREE.Mesh(new THREE.CylinderGeometry(tallRadius*0.4, tallRadius*0.4, 0.12, 32), new THREE.MeshStandardMaterial({ color:0x2a2a2a, metalness:0.4, roughness:0.5 })); innerPlatform.position.y=0.12; innerPlatform.castShadow=true; innerPlatform.receiveShadow=true; group.add(innerPlatform);
 
-  const escudoGroup = new THREE.Group(); const escudoPedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,0.12,32), new THREE.MeshStandardMaterial({ color:0x8B7355, metalness:0.3, roughness:0.7 })); escudoPedestal.position.y=0.06; escudoPedestal.castShadow=escudoPedestal.receiveShadow=true; escudoGroup.add(escudoPedestal);
+  // Escudo flotante SIN pedestales
+  const escudoGroup = new THREE.Group();
   const gltf = new GLTFLoader(); const escudoModelRef = { current: null }; const escudoPlaceholderRef = { current: null };
-  const escudoTextureLoader = new THREE.TextureLoader(); escudoTextureLoader.load('/assets/models/escudo_afa_-_argentina__afa_shield_-_argentina/textures/escudo-afa_baseColor.png', (tex)=>{ try{ tex.flipY=false; tex.colorSpace=THREE.SRGBColorSpace; }catch(e){} const mat=new THREE.MeshStandardMaterial({ map:tex, side:THREE.DoubleSide }); const escudoPlaceholder = new THREE.Mesh(new THREE.PlaneGeometry(0.9,1.1), mat); escudoPlaceholder.position.set(0, 0.18, 0); escudoPlaceholder.rotation.y = Math.PI; escudoPlaceholder.castShadow=escudoPlaceholder.receiveShadow=true; escudoGroup.add(escudoPlaceholder); escudoPlaceholderRef.current = escudoPlaceholder; });
-  gltf.load('/assets/models/escudo_afa_-_argentina__afa_shield_-_argentina/scene.gltf', (gltf)=>{ const escudoModel=gltf.scene; escudoModel.scale.set(3,3,3); escudoModel.position.set(0,2,0); escudoModel.rotation.set(0, Math.PI, 0); escudoModel.traverse(n=>{ if(n.isMesh){ n.castShadow=n.receiveShadow=true; const old=n.material; let map=null; if(old){ if(Array.isArray(old)){ const f=old.find(m=>m&&m.map); map=f?f.map:(old[0]&&old[0].map?old[0].map:null);} else { map=old.map||null; } } if(map) try{ map.colorSpace=THREE.SRGBColorSpace; }catch(e){} n.material = new THREE.MeshStandardMaterial({ map: map||null, metalness:0.2, roughness:0.8 }); n.material.needsUpdate=true; } }); escudoGroup.add(escudoModel); if(escudoPlaceholderRef.current) escudoPlaceholderRef.current.visible=false; escudoModelRef.current = escudoModel; });
+  const escudoTextureLoader = new THREE.TextureLoader(); escudoTextureLoader.load('/assets/models/escudo_afa_-_argentina__afa_shield_-_argentina/textures/escudo-afa_baseColor.png', (tex)=>{ try{ tex.flipY=false; tex.colorSpace=THREE.SRGBColorSpace; }catch(e){} const mat=new THREE.MeshStandardMaterial({ map:tex, side:THREE.DoubleSide }); const escudoPlaceholder = new THREE.Mesh(new THREE.PlaneGeometry(0.9,1.1), mat); escudoPlaceholder.position.set(0, 2.5, 0); escudoPlaceholder.rotation.y = Math.PI; escudoPlaceholder.castShadow=escudoPlaceholder.receiveShadow=true; escudoGroup.add(escudoPlaceholder); escudoPlaceholderRef.current = escudoPlaceholder; });
+  // ⚠️ ALTURA DEL MODELO: Y=4.5 sube el escudo para ocultar la base oscura del modelo
+  gltf.load('/assets/models/escudo_afa_-_argentina__afa_shield_-_argentina/scene.gltf', (gltf)=>{ const escudoModel=gltf.scene; escudoModel.scale.set(3,3,3); escudoModel.position.set(0, 2, 0); escudoModel.rotation.set(0, Math.PI, 0); escudoModel.traverse(n=>{ if(n.isMesh){ n.castShadow=n.receiveShadow=true; const old=n.material; let map=null; if(old){ if(Array.isArray(old)){ const f=old.find(m=>m&&m.map); map=f?f.map:(old[0]&&old[0].map?old[0].map:null);} else { map=old.map||null; } } if(map) try{ map.colorSpace=THREE.SRGBColorSpace; }catch(e){} n.material = new THREE.MeshStandardMaterial({ map: map||null, metalness:0.2, roughness:0.8 }); n.material.needsUpdate=true; } }); escudoGroup.add(escudoModel); if(escudoPlaceholderRef.current) escudoPlaceholderRef.current.visible=false; escudoModelRef.current = escudoModel; });
   const luzEscudo = new THREE.SpotLight(0xffffff, 3.0, 10, Math.PI/6, 0.12, 1); luzEscudo.position.set(0, tallGlassHeight - 0.5, 0); luzEscudo.target.position.set(0, 0.2, 0); luzEscudo.castShadow=true; group.add(luzEscudo); group.add(luzEscudo.target);
-  escudoGroup.position.set(0, innerPlatform.position.y, 0); group.add(escudoGroup); interactables.push(escudoGroup);
+  // ⚠️ POSICIÓN DEL GRUPO: Línea siguiente controla la altura del grupo completo (actualmente Y=0)
+  escudoGroup.position.set(0, 0, 0); group.add(escudoGroup); interactables.push(escudoGroup);
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
   return { group, tallRadius, escudoModelRef, escudoPlaceholderRef };
 }
