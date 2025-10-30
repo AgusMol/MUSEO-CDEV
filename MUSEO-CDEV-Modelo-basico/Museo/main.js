@@ -318,10 +318,7 @@ const hotbar = document.getElementById('hotbar');
 // Inicializar controles modularizados
 initControls(CANVAS, camera, {
   onInteractCallback: () => {
-    // Primero reproducir el sonido del slot activo
-    playCurrentSlotSound();
-    
-    // Luego verificar si está mirando al interruptor
+    // Verificar si está mirando al interruptor
     if (isInterruptorFocused()) {
       toggleLuces();
       toggleLightSwitch();
@@ -329,6 +326,10 @@ initControls(CANVAS, camera, {
       // Intentar abrir info de obra
       tryOpenInfo();
     }
+  },
+  onClickCallback: () => {
+    // Reproducir el sonido del slot activo solo al hacer click
+    playCurrentSlotSound();
   },
   onHotbarChangeCallback: (action, value) => {
     if (action === 'slot') {

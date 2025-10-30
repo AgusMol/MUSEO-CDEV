@@ -10,12 +10,14 @@ const state = {
 
 // Callbacks externos
 let onInteract = null;
+let onClick = null;
 let onToggleLight = null;
 let onHotbarChange = null;
 
 export function initControls(canvas, camera, options = {}) {
   const {
     onInteractCallback,
+    onClickCallback,
     onToggleLightCallback,
     onHotbarChangeCallback,
     helpElement,
@@ -24,6 +26,7 @@ export function initControls(canvas, camera, options = {}) {
   } = options;
 
   onInteract = onInteractCallback;
+  onClick = onClickCallback;
   onToggleLight = onToggleLightCallback;
   onHotbarChange = onHotbarChangeCallback;
 
@@ -73,6 +76,13 @@ export function initControls(canvas, camera, options = {}) {
   // Mouse click mientras está bloqueado el cursor (para interactuar/disparar)
   document.addEventListener('click', (e) => {
     if (!state.pointerLocked) return;
+    
+    // Primero ejecutar el callback de click (sonidos)
+    if (onClick) {
+      onClick();
+    }
+    
+    // Luego ejecutar la interacción (abrir info, etc.)
     if (onInteract) {
       onInteract();
     }
