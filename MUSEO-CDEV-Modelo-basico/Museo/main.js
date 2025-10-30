@@ -6,7 +6,7 @@ import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrin
 // addFrame ahora es usado internamente por módulos; no se importa aquí
 import { createGoldenPlaque } from './src/ui/plaques.js';
 import { initControls, getMoveState, isPointerLocked } from './src/controls/input.js';
-import { initHotbar, setHotbarSlot, scrollHotbar, updateHotbar } from './src/ui/hotbar.js';
+import { initHotbar, setHotbarSlot, scrollHotbar, updateHotbar, playCurrentSlotSound } from './src/ui/hotbar.js';
 import { initRaycast, tryOpenInfo, updateAimLabel, getRaycaster } from './src/ui/raycastInfo.js';
 import { initVideoControls, checkVideoProximity } from './src/ui/videoControls.js';
 import { initLightSwitch, getLightSwitchModel, toggleLightSwitch } from './src/objects/lightSwitch.js';
@@ -318,7 +318,10 @@ const hotbar = document.getElementById('hotbar');
 // Inicializar controles modularizados
 initControls(CANVAS, camera, {
   onInteractCallback: () => {
-    // Primero verificar si está mirando al interruptor
+    // Primero reproducir el sonido del slot activo
+    playCurrentSlotSound();
+    
+    // Luego verificar si está mirando al interruptor
     if (isInterruptorFocused()) {
       toggleLuces();
       toggleLightSwitch();

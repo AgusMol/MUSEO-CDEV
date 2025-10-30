@@ -192,6 +192,48 @@ export function checkRailingCollision(newPos, finalBalconyHeight, ROOM, balconyW
 }
 
 /**
+ * Verifica colisión con la puerta abierta de la sala pequeña
+ * @param {Object} newPos - Nueva posición del jugador {x, y, z}
+ * @param {Object} ROOM - Dimensiones de la sala principal
+ * @param {Object} SMALL - Dimensiones de la sala pequeña
+ * @returns {boolean} true si hay colisión
+ */
+export function checkSmallRoomDoorCollision(newPos, ROOM, SMALL) {
+  const playerRadius = 0.15;
+  const doorThickness = 0.05;
+  const doorW = 2.2;
+  const doorH = 3.75; // doorHeight del main.js
+  
+  // La puerta está abierta 90 grados hacia la derecha
+  // Posición de la puerta en coordenadas globales
+  const smallRoomZ = ROOM.d/2; // Posición Z de la pared frontal de la sala principal
+  const doorCenterZ = smallRoomZ + SMALL.d/2 - SMALL.d/2; // En la pared trasera de la sala pequeña
+  
+  // La puerta abierta está en X positivo (derecha)
+  const doorX = doorW/2 + doorThickness/2;
+  const doorZStart = doorCenterZ - SMALL.d/2; // -d/2 relativo a la sala pequeña
+  const doorZLength = doorW - 0.3; // Largo de la puerta abierta
+  const doorZEnd = doorZStart + doorZLength;
+  
+  // Verificar si el jugador está dentro de la sala pequeña
+  const insideSmallRoom = newPos.z > smallRoomZ + playerRadius;
+  
+  if (insideSmallRoom) {
+    // Colisión con la puerta abierta (plano vertical en X)
+    const dx = Math.abs(newPos.x - doorX);
+    
+    // Solo colisionar si está en el rango Z de la puerta y altura apropiada
+    if (dx < (doorThickness/2 + playerRadius) && 
+        newPos.z >= doorZEnd && newPos.z <= doorZStart + doorZLength + 0.5 &&
+        newPos.y <= doorH) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Inicializa el sistema de colisiones con todas las referencias necesarias
  * @param {Object} vitrinas - Referencias a todas las vitrinas
  * @param {number} finalBalconyHeight - Altura del balcón

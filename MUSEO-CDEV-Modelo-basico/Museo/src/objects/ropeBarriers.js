@@ -223,29 +223,10 @@ export function checkRopeBarrierCollision(newPos, balconyHeight = 4.6) {
       const dx = Math.abs(newPos.x - ropePos.x);
       const dz = Math.abs(newPos.z - ropePos.z);
       
-      // Debug console.log para ver qué está pasando (solo para la primera barrera)
-      if (i === 0) {
-        console.log('=== ROPE BARRIERS COLLISION DEBUG ===');
-        console.log(`Checking ${ropeBarriers.length} rope barriers`);
-        console.log('Player Y:', newPos.y, 'Balcony height:', balconyHeight);
-        console.log('Player pos:', newPos.x.toFixed(2), newPos.z.toFixed(2));
-        console.log(`Barrier ${i + 1} center pos:`, ropePos.x.toFixed(2), ropePos.z.toFixed(2));
-        console.log(`Barrier ${i + 1} bounding box size:`, size.x.toFixed(4), 'x', size.z.toFixed(4));
-        console.log(`Barrier ${i + 1} used collision size:`, ropeSize.x.toFixed(2), 'x', ropeSize.z.toFixed(2));
-        console.log(`Barrier ${i + 1} Delta X:`, dx.toFixed(2), 'Delta Z:', dz.toFixed(2));
-        console.log(`Barrier ${i + 1} X threshold:`, (ropeSize.x / 2 + playerRadius).toFixed(2));
-        console.log(`Barrier ${i + 1} Z threshold:`, (ropeSize.z / 2 + playerRadius).toFixed(2));
-      }
-      
       if (dx < (ropeSize.x / 2 + playerRadius) && dz < (ropeSize.z / 2 + playerRadius)) {
-        console.log(`>>> COLLISION DETECTED WITH BARRIER ${i + 1}! <<<`);
         return true;
       }
     }
-    
-    // Si llegamos aquí, no hubo colisión con ninguna barrera
-    console.log('No collision with any barrier');
-    console.log('=====================================');
   }
   
   return false;

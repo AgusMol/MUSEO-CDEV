@@ -70,6 +70,14 @@ export function initControls(canvas, camera, options = {}) {
 
   canvas.addEventListener('click', lockPointer);
 
+  // Mouse click mientras está bloqueado el cursor (para interactuar/disparar)
+  document.addEventListener('click', (e) => {
+    if (!state.pointerLocked) return;
+    if (onInteract) {
+      onInteract();
+    }
+  });
+
   // Mouse movement
   document.addEventListener('mousemove', (e) => {
     if (!state.pointerLocked) return;

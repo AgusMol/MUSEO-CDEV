@@ -174,17 +174,18 @@ export function createSmallRoom(scene, ROOM, wallMat, floorMaterial, options = {
     new THREE.BoxGeometry(doorThickness, doorH - frameThickness, doorW - frameThickness*2),
     doorMat
   );
-  // Puerta abierta 90 grados pegada a la pared izquierda, desde el suelo
-  door.position.set(-doorW/2 - doorThickness/2, (doorH - frameThickness)/2, -d/2 + (doorW - frameThickness*2)/2);
+  // Puerta abierta 90 grados pegada a la pared derecha, desde el suelo
+  door.position.set(doorW/2 + doorThickness/2, (doorH - frameThickness)/2, -d/2 + (doorW - frameThickness*2)/2);
   
-  // Manija de la puerta
+  // Manija de la puerta (en el lado izquierdo de la puerta abierta)
   const handleMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.8, roughness: 0.2 });
   const handle = new THREE.Mesh(
     new THREE.CylinderGeometry(0.04, 0.04, 0.15, 8),
     handleMat
   );
   handle.rotation.x = Math.PI/2;
-  handle.position.set(-doorW/2 - doorThickness - 0.08, 1.0, -d/2 + 0.5);
+  // Mismo X que la puerta, altura 1.0, Z en el lado cercano de la puerta (hacia el centro)
+  handle.position.set(doorW/2 + doorThickness, 1.25, -d/2 + 1.75);
   
   doorGroup.add(leftJamb, rightJamb, lintel, door, handle);
   group.add(doorGroup);

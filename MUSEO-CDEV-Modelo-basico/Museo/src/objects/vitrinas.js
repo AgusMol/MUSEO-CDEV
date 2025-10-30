@@ -95,7 +95,7 @@ export function createVitrinaJabulani2(scene, interactables, x = -7.5, z = 6, ro
     
     pelotaModel.scale.setScalar(scale);
     pelotaModel.position.set(0, 0.28, 0); // Subido a 0.28 para que quede mejor posicionado
-    pelotaModel.rotation.set(0, 0, -Math.PI/2);
+    pelotaModel.rotation.set(0, 0, 0); // Logos derechos sin inclinación
     
     // Configurar materiales y sombras
     pelotaModel.traverse((node) => {
