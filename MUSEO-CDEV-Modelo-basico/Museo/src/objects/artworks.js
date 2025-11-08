@@ -386,66 +386,66 @@ export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight
   // Puedes cambiar estas rutas por las imágenes que desees
   const upperFloorImages = [
     // Pared izquierda (5 cuadros)
-    './assets/images/1.jpeg',
-    './assets/images/2.jpeg',
-    './assets/images/3.png',
-    './assets/images/4.jpeg',
-    './assets/images/5.jpeg',
+    './assets/images/planta_alta/barovero penal sudamericana 2014.jpg',
+    './assets/images/planta_alta/Chango Cardenas gol Racing campeon del mundo.webp',
+    './assets/images/planta_alta/Copa Presidente de la Nacion 1920.jpg',
+    './assets/images/planta_alta/debut kun aguero.jpg',
+    './assets/images/planta_alta/estudiantes campeon en old trafford.jpg',
     
     // Pared derecha (5 cuadros)
-    './assets/images/6.jpeg',
-    './assets/images/7.jpeg',
-    './assets/images/8.jpeg',
-    './assets/images/9.jpeg',
-    './assets/images/10.jpeg',
+    './assets/images/planta_alta/gol palermo al real madrid.webp',
+    './assets/images/planta_alta/gol quintero.jpg',
+    './assets/images/planta_alta/Independiente gana la septima 1984.jpg',
+    './assets/images/planta_alta/james-rodriguez-banfield.jpg',
+    './assets/images/planta_alta/keylor navas newels.jpg',
 
     // Pared del fondo (4 cuadros) - VOLTEADAS HORIZONTALMENTE
-    './assets/images/11.png',
-    './assets/images/12.jpeg',
-    './assets/images/13.jpeg',
-    './assets/images/14.jpeg',
+    './assets/images/planta_alta/maradona vuelve a boca 1995.avif',
+    './assets/images/planta_alta/matelme.jpg',
+    './assets/images/planta_alta/mbappe_sarmiento.jpg',
+    './assets/images/planta_alta/Mostaza Merlo alzado por hinchas.webp',
     
     // Pared del frente - primera sección (2 cuadros) - VOLTEADAS HORIZONTALMENTE
-    './assets/images/15.png',
-    './assets/images/16.jpeg',
+    './assets/images/planta_alta/Newells campeon 1988.jpg',
+    './assets/images/planta_alta/Premio campeonato 2 division 1932. Huracan.jpg',
     
     // Pared del frente - segunda sección (3 cuadros) - VOLTEADAS HORIZONTALMENTE
-    './assets/images/17.jpeg',
-    './assets/images/18.jpeg',
-    './assets/images/19.jpeg',
+    './assets/images/planta_alta/Rosario Central 1987.webp',
+    './assets/images/planta_alta/trono maradona gimnasia.webp',
+    './assets/images/planta_alta/Zanetti debutando.jpg',
   ];
 
   // ====== CATÁLOGO DE OBRAS DEL PISO SUPERIOR ======
   // Aquí puedes personalizar el título, autor, año y descripción de cada cuadro del piso superior
   const upperCatalog = [
     // Pared izquierda (5 cuadros)
-    { img: upperFloorImages[0], title: 'Obra Superior 1', author: 'Autor 1', year: '2020', desc: 'Descripción de la obra superior 1.' },
-    { img: upperFloorImages[1], title: 'Obra Superior 2', author: 'Autor 2', year: '2020', desc: 'Descripción de la obra superior 2.' },
-    { img: upperFloorImages[2], title: 'Obra Superior 3', author: 'Autor 3', year: '2020', desc: 'Descripción de la obra superior 3.' },
-    { img: upperFloorImages[3], title: 'Obra Superior 4', author: 'Autor 4', year: '2020', desc: 'Descripción de la obra superior 4.' },
-    { img: upperFloorImages[4], title: 'Obra Superior 5', author: 'Autor 5', year: '2020', desc: 'Descripción de la obra superior 5.' },
+    { img: upperFloorImages[0], title: 'El inicio de una era', author: 'Marcelo Barovero', year: '2014', desc: 'Marcelo Barovero, arquero de River Plate, le ataja un penal decisivo a Emmanuel Gigliotti (Boca) en el primer minuto de la semifinal de la Copa Sudamericana 2014. Esta atajada fue el pilar anímico para la victoria de River y el comienzo del exitoso ciclo de Marcelo Gallardo.' },
+    { img: upperFloorImages[1], title: 'El primer grito mundial', author: 'Juan Carlos "Chango" Cárdenas', year: '1967', desc: 'Juan Carlos "Chango" Cárdenas remata desde 30 metros para marcar el gol histórico contra el Celtic de Escocia en 1967. Disputado en Montevideo, este tanto consagró a Racing Club de Avellaneda como el primer equipo argentino en ganar la Copa Intercontinental.' },
+    { img: upperFloorImages[2], title: 'Los albores del fútbol argentino', author: 'Copa Presidente de la Nación', year: '1920', desc: 'Imagen de la "Copa Presidente de la Nación" de 1920, un trofeo de la era amateur. Esta foto representa los primeros años de la competición organizada en el país, mucho antes del profesionalismo que comenzaría en 1931.' },
+    { img: upperFloorImages[3], title: 'Nace una estrella', author: 'Sergio "Kun" Agüero', year: '2003', desc: 'Un joven Sergio "Kun" Agüero hace su debut en Independiente en 2003. Con solo 15 años y 35 días, y de la mano de Oscar Ruggeri como DT, rompió el récord de Diego Maradona como el jugador más joven en debutar en la Primera División argentina.' },
+    { img: upperFloorImages[4], title: 'La hazaña de Old Trafford', author: 'Estudiantes de La Plata', year: '1968', desc: 'El plantel de Estudiantes de La Plata celebra tras empatar 1-1 contra el Manchester United en Inglaterra, en la final de la Copa Intercontinental 1968. Liderados por Osvaldo Zubeldía, se consagraron campeones del mundo en "El Teatro de los Sueños".' },
     
     // Pared derecha (5 cuadros)
-    { img: upperFloorImages[5], title: 'Obra Superior 6', author: 'Autor 6', year: '2020', desc: 'Descripción de la obra superior 6.' },
-    { img: upperFloorImages[6], title: 'Obra Superior 7', author: 'Autor 7', year: '2020', desc: 'Descripción de la obra superior 7.' },
-    { img: upperFloorImages[7], title: 'Obra Superior 8', author: 'Autor 8', year: '2020', desc: 'Descripción de la obra superior 8.' },
-    { img: upperFloorImages[8], title: 'Obra Superior 9', author: 'Autor 9', year: '2020', desc: 'Descripción de la obra superior 9.' },
-    { img: upperFloorImages[9], title: 'Obra Superior 10', author: 'Autor 10', year: '2020', desc: 'Descripción de la obra superior 10.' },
-    
+    { img: upperFloorImages[5], title: 'El Titán de Tokio', author: 'Martín Palermo', year: '2000', desc: 'Martín Palermo define de zurda ante Iker Casillas para marcar el segundo de sus dos goles al Real Madrid en la final de la Copa Intercontinental 2000. En una actuación memorable, Boca venció 2-1 al equipo "Galáctico" y conquistó el mundo.' },
+    { img: upperFloorImages[6], title: 'El gol de Madrid', author: 'Juan Fernando Quintero', year: '2018', desc: 'El colombiano Juan Fernando Quintero remata de zurda para marcar el 2-1 parcial contra Boca Juniors en el tiempo suplementario. Fue el gol que rompió el empate en la histórica final de la Copa Libertadores 2018 disputada en el Estadio Santiago Bernabéu.' },
+    { img: upperFloorImages[7], title: 'El Rey de Copas', author: 'Independiente', year: '1984', desc: 'El plantel de Independiente, liderado por Ricardo Bochini y Jorge Burruchaga, celebra la obtención de su séptima Copa Libertadores en 1984. Este título consolidó al club de Avellaneda como el máximo ganador histórico del certamen, un récord que aún ostenta.' },
+    { img: upperFloorImages[8], title: 'Estrella mundial en Banfield', author: 'James Rodríguez', year: '2008', desc: 'Imagen del joven James Rodríguez celebrando un golazo, y mostrando sus primeros dotes de calidad en su paso por Banfield antes de convertirse en estrella mundial.' },
+    { img: upperFloorImages[9], title: 'El "humo" de clase mundial', author: 'Keylor Navas', year: '2024', desc: 'Un popular fotomontaje que postula al arquero estrella costarricense Keylor Navas como refuerzo de Newell\'s Old Boys. Esta imagen representa el folklore de los hinchas y los "sueños de mercado de pases" que se viralizan en las redes.' },
+
     // Pared del fondo (4 cuadros)
-    { img: upperFloorImages[10], title: 'Obra Superior 11', author: 'Autor 11', year: '2020', desc: 'Descripción de la obra superior 11.' },
-    { img: upperFloorImages[11], title: 'Obra Superior 12', author: 'Autor 12', year: '2020', desc: 'Descripción de la obra superior 12.' },
-    { img: upperFloorImages[12], title: 'Obra Superior 13', author: 'Autor 13', year: '2020', desc: 'Descripción de la obra superior 13.' },
-    { img: upperFloorImages[13], title: 'Obra Superior 14', author: 'Autor 14', year: '2020', desc: 'Descripción de la obra superior 14.' },
+    { img: upperFloorImages[10], title: 'El regreso del D10S', author: 'Diego Armando Maradona', year: '1995', desc: 'Diego Armando Maradona vuelve a Boca Juniors en 1995, luciendo un icónico mechón de pelo teñido de amarillo. Su regreso, tras años de ausencia, revolucionó el fútbol argentino y marcó la última etapa de su carrera profesional.' },
+    { img: upperFloorImages[11], title: 'El ritual del 10', author: 'Juan Román Riquelme', year: '2010', desc: 'Una imagen icónica de Juan Román Riquelme tomando mate. Apodada "Matelme", esta foto trasciende el fútbol y captura la esencia de Riquelme como símbolo de las costumbres argentinas, una figura que mantiene su mística ahora en su rol de dirigente.' },
+    { img: upperFloorImages[12], title: 'El sueño imposible', author: 'Kylian Mbappé', year: '2024', desc: 'Un popular fotomontaje que muestra a la superestrella mundial Kylian Mbappé vistiendo la camiseta de Sarmiento de Junín. Es una imagen de folklore digital que representa con humor los sueños imposibles y las bromas de los hinchas durante el mercado de pases.' },
+    { img: upperFloorImages[13], title: 'Mostaza Merlo ídolo de Racing', author: 'Reinaldo "Mostaza" Merlo', year: '2001', desc: 'Diciembre de 2001. Reinaldo "Mostaza" Merlo sacó campeón a Racing Club después de 35 años de sequía. Su muletilla durante todo el torneo fue "vamos paso a paso".' },
     
     // Pared del frente - primera sección (2 cuadros)
-    { img: upperFloorImages[14], title: 'Obra Superior 15', author: 'Autor 15', year: '2020', desc: 'Descripción de la obra superior 15.' },
-    { img: upperFloorImages[15], title: 'Obra Superior 16', author: 'Autor 16', year: '2020', desc: 'Descripción de la obra superior 16.' },
+    { img: upperFloorImages[14], title: 'Un título de la cantera', author: 'Newell\'s Old Boys', year: '1988', desc: 'El plantel de Newell\'s Old Boys campeón de la temporada 1987/88. Liderado por el DT José Yudica, este equipo logró un hito único en el fútbol argentino moderno: se consagró campeón utilizando exclusivamente jugadores formados en sus propias divisiones inferiores.' },
+    { img: upperFloorImages[15], title: 'Reliquia del ascenso', author: 'Club Atlético Huracán', year: '1932', desc: 'Un trofeo del club Huracán correspondiente a un campeonato de segunda división en 1932. Esta pieza es un testimonio de los primeros años del fútbol organizado y las distintas ligas que coexistían en la compleja transición entre el amateurismo y el profesionalismo.' },
     
     // Pared del frente - segunda sección (3 cuadros)
-    { img: upperFloorImages[16], title: 'Obra Superior 17', author: 'Autor 17', year: '2020', desc: 'Descripción de la obra superior 17.' },
-    { img: upperFloorImages[17], title: 'Obra Superior 18', author: 'Autor 18', year: '2020', desc: 'Descripción de la obra superior 18.' },
-    { img: upperFloorImages[18], title: 'Obra Superior 19', author: 'Autor 19', year: '2020', desc: 'Descripción de la obra superior 19.' },
+    { img: upperFloorImages[16], title: 'La hazaña del "Canalla"', author: 'Rosario Central', year: '1987', desc: 'El equipo de Rosario Central campeón de la temporada 1986/87. Liderado por Ángel Tulio Zof y con figuras como Omar Palma y Edgardo Bauza, logró un récord único: se consagró campeón de Primera División en la temporada inmediatamente posterior a su ascenso.' },
+    { img: upperFloorImages[17], title: 'Maradona en su trono como DT', author: 'Diego Armando Maradona', year: '2019', desc: '2019, Diego Maradona es el DT de Gimnasia y Esgrima La Plata. Para agasajarlo y por sus problemas de rodilla, el club le preparaba un "trono" (un sillón de lujo, tipo capitán) personalizado para que dirigiera desde el banco de suplentes.' },
+    { img: upperFloorImages[18], title: 'Los inicios del "Pupi"', author: 'Javier Zanetti', year: '1993', desc: 'Un joven Javier Zanetti durante su etapa en Talleres de Remedios de Escalada. Fue en el "Taladro" donde el legendario lateral se dio a conocer, mostrando la calidad y resistencia que lo llevarían a una carrera histórica de dos décadas en el Inter de Milán y la Selección Argentina.' },
   ];
 
   // Función auxiliar que usa addFrame pero con altura personalizada
@@ -471,8 +471,15 @@ export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight
     const loader = new THREE.TextureLoader();
     
     // Voltear horizontalmente las imágenes de la pared del frente y del fondo del piso superior
-    const shouldFlip = img.includes('11.png') || img.includes('12.jpeg') || img.includes('13.jpeg') || img.includes('14.jpeg') ||
-                       img.includes('15.png') || img.includes('16.jpeg') || img.includes('17.jpeg') || img.includes('18.jpeg') || img.includes('19.jpeg');
+    const shouldFlip = img && (img.includes('planta_alta/maradona vuelve a boca 1995') || 
+                       img.includes('planta_alta/matelme') || 
+                       img.includes('planta_alta/mbappe_sarmiento') || 
+                       img.includes('planta_alta/Mostaza Merlo') ||
+                       img.includes('planta_alta/Newells campeon 1988') || 
+                       img.includes('planta_alta/Premio campeonato') || 
+                       img.includes('planta_alta/Rosario Central') || 
+                       img.includes('planta_alta/trono maradona') || 
+                       img.includes('planta_alta/Zanetti'));
     
     loader.load(img, (texture)=>{ 
       try{ 
