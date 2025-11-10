@@ -113,12 +113,20 @@ export function initControls(canvas, camera, options = {}) {
       onInteract();
     }
 
-    // Hotbar: teclas numéricas 1-9
+    // Hotbar: teclas numéricas 1-9 (números de arriba) o teclado numérico (derecha)
+    let slotNumber = null;
+    
+    // Números de arriba (Digit1-9)
     if (e.code >= 'Digit1' && e.code <= 'Digit9') {
-      const slotNumber = parseInt(e.code.replace('Digit', ''));
-      if (onHotbarChange) {
-        onHotbarChange('slot', slotNumber);
-      }
+      slotNumber = parseInt(e.code.replace('Digit', ''));
+    }
+    // Teclado numérico derecho (Numpad1-9)
+    else if (e.code >= 'Numpad1' && e.code <= 'Numpad9') {
+      slotNumber = parseInt(e.code.replace('Numpad', ''));
+    }
+    
+    if (slotNumber && onHotbarChange) {
+      onHotbarChange('slot', slotNumber);
     }
   });
 
