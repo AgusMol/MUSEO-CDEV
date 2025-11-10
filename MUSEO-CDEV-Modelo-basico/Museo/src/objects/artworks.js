@@ -28,7 +28,7 @@ const availableImageFiles = [
 
 // Función para crear frame con video
 function addVideoFrame(scene, interactables, opts) {
-  const { x, y, z, face, videoSrc, title, desc } = opts;
+  const { x, y, z, face, videoSrc, title, desc, flip } = opts;
   const frameGroup = new THREE.Group();
   frameGroup.position.set(x, y || 1.7, z);
   
@@ -50,7 +50,6 @@ function addVideoFrame(scene, interactables, opts) {
   video.crossOrigin = 'anonymous';
   video.volume = 0.5; // Volumen inicial al 50%
   video.dataset.baseVolume = '0.5'; // Volumen base (50%)
-  video.dataset.hasPlayed = 'false'; // Flag para autoplay
   
   // Crear textura de video
   const videoTexture = new THREE.VideoTexture(video);
@@ -58,11 +57,18 @@ function addVideoFrame(scene, interactables, opts) {
   videoTexture.minFilter = THREE.LinearFilter;
   videoTexture.magFilter = THREE.LinearFilter;
   
-  // Voltear horizontalmente los videos de la pared del frente y del fondo
-  const shouldFlip = videoSrc.includes('1978_2') || videoSrc.includes('1978.') || 
-                     videoSrc.includes('2008') || videoSrc.includes('2009') ||
-                     videoSrc.includes('1998_zanetti') || videoSrc.includes('palermo') || videoSrc.includes('2006_maxi_rodriguez');
-  
+  // Decide whether to flip horizontally. If caller provided `flip` it's used
+  // as an explicit override. Otherwise fall back to the previous heuristic.
+  let shouldFlip;
+  if (typeof flip === 'boolean') {
+    shouldFlip = !!flip;
+  } else {
+    // Default: flip videos that are placed on the 'back' face because the
+    // frame group is rotated 180deg and that would otherwise mirror the image.
+    // For other faces we don't flip by default.
+    shouldFlip = (face === 'back');
+  }
+
   if (shouldFlip) {
     videoTexture.wrapS = THREE.RepeatWrapping;
     videoTexture.repeat.x = -1;
@@ -378,9 +384,12 @@ export function placeArtworks(scene, interactables, ROOM) {
   });
 }
 
-export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight) {
+export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight, ROOM, DOOR) {
   // Altura para los cuadros del piso superior
   const upperY = finalBalconyHeight + 1.7;
+  // Si no nos pasan ROOM/DOOR intentamos usar los valores por defecto conservadores
+  ROOM = ROOM || { w: 24, d: 36 };
+  DOOR = DOOR || { width: 2.2 };
   
   // ====== ARRAY DE IMÁGENES PARA EL PISO SUPERIOR ======
   // Puedes cambiar estas rutas por las imágenes que desees
@@ -402,7 +411,8 @@ export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight
     // Pared del fondo (4 cuadros) - VOLTEADAS HORIZONTALMENTE
     './assets/images/planta_alta/maradona vuelve a boca 1995.avif',
     './assets/images/planta_alta/matelme.jpg',
-    './assets/images/planta_alta/mbappe_sarmiento.jpg',
+    './assets/videos/recibimiento.mp4',
+    './assets/videos/unicocampeon.mp4',
     './assets/images/planta_alta/Mostaza Merlo alzado por hinchas.webp',
     
     // Pared del frente - primera sección (2 cuadros) - VOLTEADAS HORIZONTALMENTE
@@ -435,8 +445,8 @@ export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight
     // Pared del fondo (4 cuadros)
     { img: upperFloorImages[10], title: 'El regreso del D10S', author: 'Diego Armando Maradona', year: '1995', desc: 'Diego Armando Maradona vuelve a Boca Juniors en 1995, luciendo un icónico mechón de pelo teñido de amarillo. Su regreso, tras años de ausencia, revolucionó el fútbol argentino y marcó la última etapa de su carrera profesional.' },
     { img: upperFloorImages[11], title: 'El ritual del 10', author: 'Juan Román Riquelme', year: '2010', desc: 'Una imagen icónica de Juan Román Riquelme tomando mate. Apodada "Matelme", esta foto trasciende el fútbol y captura la esencia de Riquelme como símbolo de las costumbres argentinas, una figura que mantiene su mística ahora en su rol de dirigente.' },
-    { img: upperFloorImages[12], title: 'El sueño imposible', author: 'Kylian Mbappé', year: '2024', desc: 'Un popular fotomontaje que muestra a la superestrella mundial Kylian Mbappé vistiendo la camiseta de Sarmiento de Junín. Es una imagen de folklore digital que representa con humor los sueños imposibles y las bromas de los hinchas durante el mercado de pases.' },
-    { img: upperFloorImages[13], title: 'Mostaza Merlo ídolo de Racing', author: 'Reinaldo "Mostaza" Merlo', year: '2001', desc: 'Diciembre de 2001. Reinaldo "Mostaza" Merlo sacó campeón a Racing Club después de 35 años de sequía. Su muletilla durante todo el torneo fue "vamos paso a paso".' },
+    { img: upperFloorImages[12], title: 'La alegría de un pueblo', author: 'Fanatiz', year: '2022', desc: 'Argentina campeón. El resto es historia.' },
+    { img: upperFloorImages[13], title: 'Grande por su hisToria, GiganTe por su genTe', author: 'El más grande del inTerior', year: '2025', desc: 'Como siempre, la hisToria de Córdoba la escribe Talleres. Único campeón nacional e internacional de Córdoba.' },
     
     // Pared del frente - primera sección (2 cuadros)
     { img: upperFloorImages[14], title: 'Un título de la cantera', author: 'Newell\'s Old Boys', year: '1988', desc: 'El plantel de Newell\'s Old Boys campeón de la temporada 1987/88. Liderado por el DT José Yudica, este equipo logró un hito único en el fútbol argentino moderno: se consagró campeón utilizando exclusivamente jugadores formados en sus propias divisiones inferiores.' },
@@ -461,7 +471,7 @@ export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight
     const artWidth=1.8, artHeight=1.2, frameThickness=0.08;
     const barDepth=frameThickness;
     const barZ=0.01;
-    const artMat = new THREE.MeshBasicMaterial({ color: 0xdddddd, side: THREE.DoubleSide });
+  const artMat = new THREE.MeshBasicMaterial({ color: 0xdddddd, side: THREE.DoubleSide });
     const artPlane = new THREE.Mesh(new THREE.PlaneGeometry(artWidth, artHeight), artMat);
     artPlane.position.set(0,0,-0.01);
     artPlane.userData = { title, desc };
@@ -481,6 +491,24 @@ export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight
                        img.includes('planta_alta/trono maradona') || 
                        img.includes('planta_alta/Zanetti'));
     
+    // If the provided path is a video (.mp4) delegate to addVideoFrame so
+    // the video element, VideoTexture and window.museumVideos handling are used.
+    if (img && img.includes('.mp4')) {
+      // Use the existing addVideoFrame helper to create a video frame at upperY.
+      // Provide the same face/x/z/title/desc so it replaces this image slot.
+      // Don't pass 'flip' explicitly - let addVideoFrame decide based on face.
+      addVideoFrame(scene, interactables, {
+        x: x,
+        y: upperY,
+        z: z,
+        face: face,
+        videoSrc: img,
+        title: title,
+        desc: desc
+      });
+      return; // already added as a video frame
+    }
+
     loader.load(img, (texture)=>{ 
       try{ 
         texture.colorSpace=THREE.SRGBColorSpace;
@@ -530,85 +558,84 @@ export function placeUpperFloorArtworks(scene, interactables, finalBalconyHeight
     obraLight.position.set(0, 0.6, 1.5);
     frameGroup.add(obraLight);
 
-    frameGroup.userData = { title, desc };
+  frameGroup.userData = { title, desc, isVideo: false };
     scene.add(frameGroup);
     interactables.push(frameGroup);
   }
 
   let imageIndex = 0;
 
-  // Pared izquierda (5 cuadros)
-  const posicionesIzquierda = [-8, -4, 0, 4, 8];
-  posicionesIzquierda.forEach((z, index) => {
-    const obra = upperCatalog[imageIndex % upperCatalog.length];
-    addUpperFloorFrame({
-      x: -12 + 0.18,
-      z: z,
-      face: 'left',
-      img: upperFloorImages[imageIndex] || obra.img,
-      title: obra.title,
-      desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-    });
-    imageIndex++;
-  });
+  // Calcular regiones usando ROOM y DOOR para distribuir cuadros centrados
+  const halfW = ROOM.w / 2;
+  const halfD = ROOM.d / 2;
+
+  // Pared izquierda (5 cuadros) -> distribuir en profundidad (z) a lo largo del pasillo
+  (function(){
+    const count = 5;
+    const zMin = -halfD + 6; // mantener cierta separación de esquinas
+    const zMax = halfD - 6;
+    const panelX = -halfW + 0.18; // muro izquierdo
+    for(let i=1;i<=count;i++){
+      const t = i / (count+1);
+      const z = zMin + (zMax - zMin) * t;
+      const obra = upperCatalog[imageIndex % upperCatalog.length];
+      addUpperFloorFrame({ x: panelX, z: Math.round(z*100)/100, face: 'left', img: upperFloorImages[imageIndex] || obra.img, title: obra.title, desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` });
+      imageIndex++;
+    }
+  })();
 
   // Pared derecha (5 cuadros)
-  const posicionesDerecha = [-8, -4, 0, 4, 8];
-  posicionesDerecha.forEach((z, index) => {
-    const obra = upperCatalog[imageIndex % upperCatalog.length];
-    addUpperFloorFrame({
-      x: 12 - 0.18,
-      z: z,
-      face: 'right',
-      img: upperFloorImages[imageIndex] || obra.img,
-      title: obra.title,
-      desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-    });
-    imageIndex++;
-  });
+  (function(){
+    const count = 5;
+    const zMin = -halfD + 6;
+    const zMax = halfD - 6;
+    const panelX = halfW - 0.18; // muro derecho
+    for(let i=1;i<=count;i++){
+      const t = i / (count+1);
+      const z = zMin + (zMax - zMin) * t;
+      const obra = upperCatalog[imageIndex % upperCatalog.length];
+      addUpperFloorFrame({ x: panelX, z: Math.round(z*100)/100, face: 'right', img: upperFloorImages[imageIndex] || obra.img, title: obra.title, desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` });
+      imageIndex++;
+    }
+  })();
 
-  // Pared del fondo (4 cuadros)
-  const posicionesFondo = [-6, -2, 2, 6];
-  posicionesFondo.forEach((x, index) => {
-    const obra = upperCatalog[imageIndex % upperCatalog.length];
-    addUpperFloorFrame({
-      x: x,
-      z: -18 + 0.18,
-      face: 'back',
-      img: upperFloorImages[imageIndex] || obra.img,
-      title: obra.title,
-      desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-    });
-    imageIndex++;
-  });
+  // Pared del fondo (4 cuadros) -> distribuir centrados a lo ancho completo
+  (function(){
+    const count = 4;
+    const xMin = -halfW + 2;
+    const xMax = halfW - 2;
+    const z = -halfD + 0.18;
+    for(let i=1;i<=count;i++){
+      const t = i / (count+1);
+      const x = xMin + (xMax - xMin) * t;
+      const obra = upperCatalog[imageIndex % upperCatalog.length];
+      addUpperFloorFrame({ x: Math.round(x*100)/100, z: z, face: 'back', img: upperFloorImages[imageIndex] || obra.img, title: obra.title, desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` });
+      imageIndex++;
+    }
+  })();
 
-  // Pared del frente - primera sección (2 cuadros, izquierda de la puerta)
-  const posicionesFrenteInicial = [-8, -4];
-  posicionesFrenteInicial.forEach((x, index) => {
-    const obra = upperCatalog[imageIndex % upperCatalog.length];
-    addUpperFloorFrame({
-      x: x,
-      z: 18 - 0.18,
-      face: 'frontinicial',
-      img: upperFloorImages[imageIndex] || obra.img,
-      title: obra.title,
-      desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-    });
-    imageIndex++;
-  });
+  // Pared del frente -> distribuir todos los cuadros frontales como un bloque centrado
+  (function(){
+    const leftCount = 2;
+    const rightCount = 3;
+    const totalCount = leftCount + rightCount;
+    const z = halfD - 0.18;
 
-  // Pared del frente - segunda sección (3 cuadros, derecha de la puerta)
-  const posicionesFrente2 = [2, 6, 10];
-  posicionesFrente2.forEach((x, index) => {
-    const obra = upperCatalog[imageIndex % upperCatalog.length];
-    addUpperFloorFrame({
-      x: x,
-      z: 18 - 0.18,
-      face: 'frontfinal',
-      img: upperFloorImages[imageIndex] || obra.img,
-      title: obra.title,
-      desc: `${obra.author} · ${obra.year}\n\n${obra.desc}`
-    });
-    imageIndex++;
-  });
+    // disponible a lo ancho (respetando un pequeño margen lateral)
+    const xMin = -halfW + 2;
+    const xMax = halfW - 2;
+
+    // spacing que centra el bloque en x=0
+    const spacing = totalCount > 1 ? (xMax - xMin) / (totalCount - 1) : 0;
+    // start para que la media del bloque quede en 0
+    const start = -((totalCount - 1) * spacing) / 2;
+
+    for (let i = 0; i < totalCount; i++) {
+      const x = Math.round((start + i * spacing) * 100) / 100;
+      const obra = upperCatalog[imageIndex % upperCatalog.length];
+      const face = x < 0 ? 'frontinicial' : 'frontfinal';
+      addUpperFloorFrame({ x: x, z: z, face: face, img: upperFloorImages[imageIndex] || obra.img, title: obra.title, desc: `${obra.author} · ${obra.year}\n\n${obra.desc}` });
+      imageIndex++;
+    }
+  })();
 }

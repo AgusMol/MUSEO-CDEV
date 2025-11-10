@@ -110,6 +110,39 @@ export function checkVitrinaCollision(newPos, vitrinas, finalBalconyHeight) {
         return true;
       }
     }
+    
+    // Mesa
+    if (vitrinas.mesa) {
+      const mesaPos = vitrinas.mesa.position;
+      const mesaSize = { x: 1.5, z: 1.5 }; // Tamaño aproximado de la mesa
+      const dxMesa = Math.abs(newPos.x - mesaPos.x);
+      const dzMesa = Math.abs(newPos.z - mesaPos.z);
+      if (dxMesa < (mesaSize.x / 2 + playerRadius) && dzMesa < (mesaSize.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
+    
+    // Coronados de Gloria
+    if (vitrinas.coronados) {
+      const coronadosPos = vitrinas.coronados.position;
+      const coronadosSize = { x: 0.6, z: 0.4 }; // Tamaño reducido para acercarse más (era 2.0, 2.0)
+      const dxCoronados = Math.abs(newPos.x - coronadosPos.x);
+      const dzCoronados = Math.abs(newPos.z - coronadosPos.z);
+      if (dxCoronados < (coronadosSize.x / 2 + playerRadius) && dzCoronados < (coronadosSize.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
+    
+    // Clemente (arte urbano)
+    if (vitrinas.vitrinaClemente) {
+      const clementePos = vitrinas.vitrinaClemente.position;
+      const clementeSize = { x: 3.5, z: 3.5 }; // Tamaño grande de la escultura
+      const dxClemente = Math.abs(newPos.x - clementePos.x);
+      const dzClemente = Math.abs(newPos.z - clementePos.z);
+      if (dxClemente < (clementeSize.x / 2 + playerRadius) && dzClemente < (clementeSize.z / 2 + playerRadius)) {
+        return true;
+      }
+    }
   }
 
   // Vitrina central cilíndrica (suelo-techo)

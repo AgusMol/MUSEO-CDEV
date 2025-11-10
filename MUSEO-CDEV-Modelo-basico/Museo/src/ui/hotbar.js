@@ -23,7 +23,7 @@ const itemSounds = {
   ],         // Mate - ¡Con alternancia cada 3 clicks!
   7: './assets/audio/Audios-hotbar/piluso.mp3',       // Piluso - AGREGA TU AUDIO AQUÍ
   8: './assets/audio/Audios-hotbar/messi.mp3',                                              // Vacío
-  9: ''                                               // Vacío
+  9: './assets/audio/Audios-hotbar/lasquiero.mp3'                                               // Vacío
 };
 
 export function initHotbar() {
@@ -44,7 +44,7 @@ export function initHotbar() {
     6: 'assets/images/hotbar/mate-8bit.png', 
     7: 'assets/images/hotbar/piluso-8bit.png', 
     8: 'assets/images/hotbar/messi.png', 
-    9: '' 
+    9: 'assets/images/hotbar/lasquiero.jpg' 
   };
 
   hotbarSlots.forEach((slot, index) => {

@@ -45,6 +45,6 @@ export function addFrame(scene, interactables, opts){
 
   const obraLight = new THREE.PointLight(0xffffff, 1.2, 6); obraLight.position.set(0, 0.6, 1.5); frameGroup.add(obraLight);
 
-  frameGroup.userData = { title, desc };
+  frameGroup.userData = { title, desc, isVideo: false };
   scene.add(frameGroup); interactables.push(frameGroup);
 }

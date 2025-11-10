@@ -2,7 +2,7 @@
 import { createYouTubeBgm } from './bgm/youtubeBgm.js'; // para música de fondo
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4, createVitrinaJabulani2, createVitrinaJabulani3, createVitrinaMedallaOlimpica } from './src/objects/vitrinas.js';
+import { createVitrina1, createVitrina2, createVitrinaLibertadores, createVitrinaAmerica, createVitrinaCentralEscudo, createVitrinaWorldCup3, createVitrinaWorldCup4, createVitrinaJabulani2, createVitrinaJabulani3, createVitrinaMedallaOlimpica, createVitrinaClemente, createMesa, createCoronadosDeGloria } from './src/objects/vitrinas.js';
 // addFrame ahora es usado internamente por módulos; no se importa aquí
 import { createGoldenPlaque } from './src/ui/plaques.js';
 import { initControls, getMoveState, isPointerLocked } from './src/controls/input.js';
@@ -236,7 +236,7 @@ if (window.__pendingInteractables && Array.isArray(window.__pendingInteractables
 placeArtworks(scene, interactables, ROOM);
 
 // Colocar cuadros en el piso superior
-placeUpperFloorArtworks(scene, interactables, finalBalconyHeight);
+placeUpperFloorArtworks(scene, interactables, finalBalconyHeight, ROOM, DOOR);
 
 
 // ======== Vitrina de Vidrio 1 (modular: Jabulani) ========
@@ -274,6 +274,15 @@ const { group: vitrinaJabulani3Group, baseY: vitrinaJabulani3BaseY, vitH: vitrin
 // Medalla Olímpica - posicionada cerca de las otras vitrinas
 const { group: vitrinaMedallaGroup, baseY: vitrinaMedallaBaseY, vitH: vitrinaMedallaHeight, medallaModelRef, luzObjeto: luzMedalla } = createVitrinaMedallaOlimpica(scene, interactables, 3, -12.5, -Math.PI/4 + Math.PI);
 
+// Clemente - posicionado en la planta baja como arte urbano (sin vitrina)
+const { group: vitrinaClementeGroup, clementeModelRef, luzObjeto: luzClemente } = createVitrinaClemente(scene, interactables, 11.5, -13, Math.PI/2 + Math.PI);
+
+// Mesa - posicionada cerca de Clemente (grupo independiente)
+const { group: mesaGroup, mesaModelRef } = createMesa(scene, -10.5, -15.7, Math.PI/2 + Math.PI);
+
+// Coronados de Gloria - posicionado cerca de la mesa
+const { group: coronadosGroup, coronadosModelRef, luzObjeto: luzCoronados } = createCoronadosDeGloria(scene, -8, -15.7, Math.PI/2 + Math.PI);
+
 
 // ======== Sistema de colisiones (modularizado) ========
 const collisionSystem = initCollisionSystem(
@@ -287,6 +296,9 @@ const collisionSystem = initCollisionSystem(
     vitrinaJabulani2: vitrinaJabulani2Group,
     vitrinaJabulani3: vitrinaJabulani3Group,
     vitrinaMedalla: vitrinaMedallaGroup,
+    vitrinaClemente: vitrinaClementeGroup,
+    mesa: mesaGroup,
+    coronados: coronadosGroup,
     vitrinaTall: vitrinaTallGroup,
     tallRadius: tallRadius
   },
@@ -447,6 +459,11 @@ function animate(now){
     medallaModelRef.current.rotation.y += dt * 0.4;
   }
   
+  // Clemente - sin rotación (arte urbano estático)
+  // if (clementeModelRef.current) {
+  //   clementeModelRef.current.rotation.y += dt * 0.3;
+  // }
+  
   // Rotar el trofeo de la Copa del Mundo si está cargado
   if (trofeoModelRef.current) {
     trofeoModelRef.current.rotation.y += dt * 0.3; // Rotación más lenta para el trofeo
@@ -482,6 +499,16 @@ function animate(now){
   // Efecto de luz en el objeto (siempre brillante)
   if (luzObjeto) {
     luzObjeto.intensity = 2.5 + Math.sin(now * 0.003) * 0.3;
+  }
+  
+  // Efecto de luz en la vitrina de Clemente
+  if (luzClemente) {
+    luzClemente.intensity = 2.5 + Math.sin(now * 0.003) * 0.4;
+  }
+  
+  // Efecto de luz en Coronados de Gloria
+  if (luzCoronados) {
+    luzCoronados.intensity = 3.0 + Math.sin(now * 0.0025) * 0.5;
   }
 
   // Efecto de luz en el trofeo (más brillante y dramático)

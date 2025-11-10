@@ -6,6 +6,8 @@ let activeVideo = null;
 let isControlsVisible = false;
 let keyboardControlsActive = false;
 
+import * as THREE from 'three';
+
 export function initVideoControls() {
   const controls = document.getElementById('video-controls');
   const playBtn = document.getElementById('video-play');
@@ -224,9 +226,13 @@ function calculateVolumeByDistance(distance) {
 export function checkVideoProximity(camera, interactables) {
   const threshold = 1.5; // Distancia para mostrar controles (PEGADO AL CUADRO)
   let foundVideo = false;
-  
+  // Prepare temporary vectors to avoid allocations inside the loop
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+  const vecToObj = new THREE.Vector3();
+
   for (const obj of interactables) {
-    if (obj.userData && obj.userData.isVideo && obj.userData.video) {
+    if (obj.userData && obj.userData.isVideo && obj.userData.video && (obj.userData.video instanceof HTMLVideoElement)) {
       const dx = camera.position.x - obj.position.x;
       const dz = camera.position.z - obj.position.z;
       const distance = Math.sqrt(dx * dx + dz * dz);
@@ -241,21 +247,32 @@ export function checkVideoProximity(camera, interactables) {
       
       // Aplicar volumen final (base * espacial)
       video.volume = baseVolume * spatialVolume;
+
+      // Si estamos demasiado lejos (sin volumen), pausar el video para evitar mezclas de audio
+      if (spatialVolume === 0 && !video.paused) {
+        try { video.pause(); } catch(e) {}
+      }
       
       // Mostrar controles solo si está PEGADO
-      if (distance < threshold) {
+      // Additionally ensure the camera is roughly at the same vertical level
+      // (to prevent lower-floor videos being controlled from the upper floor)
+      const verticalDelta = Math.abs(camera.position.y - obj.position.y || 0);
+      const maxVerticalDelta = 1.4; // allow small height differences
+
+      // Ensure the player is actually looking toward the artwork (field-of-view check)
+      vecToObj.set(obj.position.x - camera.position.x, obj.position.y - camera.position.y, obj.position.z - camera.position.z).normalize();
+      const facingDot = camDir.dot(vecToObj); // 1 = directly in front, -1 = behind
+      const minFacingDot = 0.5; // ~60 degrees cone
+
+      if (distance < threshold && verticalDelta <= maxVerticalDelta && facingDot >= minFacingDot) {
         window.showVideoControls(video);
         foundVideo = true;
       }
       
-      // Auto-play cuando el jugador está cerca por primera vez
-      if (distance < 3.5 && video.paused && !video.dataset.hasPlayed) {
-        video.play().then(() => {
-          video.dataset.hasPlayed = 'true';
-        }).catch(err => {
-          console.log('Video autoplay bloqueado:', err);
-        });
-      }
+      // No autoplay: dejamos que el usuario accione play desde los controles.
+      // Antes se intentaba iniciar video.play() automáticamente al acercarse; eso puede
+      // causar reproducción no deseada y mezclas de audio. Ahora solo actualizamos volumen
+      // y mostramos controles, pero no lanzamos play().
     }
   }
   

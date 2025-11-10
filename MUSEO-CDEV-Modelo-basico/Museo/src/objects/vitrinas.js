@@ -502,3 +502,185 @@ export function createVitrinaMedallaOlimpica(scene, interactables, x = -7.5, z =
   group.position.set(x, 0, z); group.rotation.y = rotationY; group.castShadow=group.receiveShadow=true; scene.add(group);
   return { group, baseY, vitH, medallaModelRef: modelRef, luzObjeto };
 }
+
+export function createVitrinaClemente(scene, interactables, x = -7.5, z = -12.5, rotationY = Math.PI/4){
+  const group = new THREE.Group();
+  const modelRef = { current: null };
+  
+  // Cargar modelo GLTF de Clemente directamente sin vitrina (arte urbano)
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load('/assets/models/clemente/scene.gltf', (gltf) => {
+    const clementeModel = gltf.scene;
+    
+    // Calcular tamaño y escalar - más grande para efecto urbano
+    const box = new THREE.Box3().setFromObject(clementeModel);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const targetSize = 3.5; // Mucho más grande, como arte urbano/escultura
+    const scale = targetSize / maxDim;
+    
+    clementeModel.scale.setScalar(scale);
+    clementeModel.position.set(0, 1.31, 0); // Levantado del suelo - altura de pedestal
+    clementeModel.rotation.set(0, 0, 0);
+    
+    // Configurar materiales y sombras
+    clementeModel.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        if (node.material) {
+          if (node.material.map) {
+            try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+          }
+          if (node.material.normalMap) {
+            try { node.material.normalMap.colorSpace = THREE.LinearSRGBColorSpace; } catch(e) {}
+          }
+        }
+      }
+    });
+    
+    group.add(clementeModel);
+    modelRef.current = clementeModel;
+    console.log('✅ Modelo de Clemente cargado como arte urbano');
+  }, undefined, (error) => {
+    console.error('❌ Error cargando modelo de Clemente GLTF:', error);
+  });
+  
+  // Iluminación tipo galería - spotlight desde arriba
+  const luzPrincipal = new THREE.SpotLight(0xffffff, 4.0, 15, Math.PI/6, 0.5, 1);
+  luzPrincipal.position.set(0, 6, 0);
+  luzPrincipal.target.position.set(0, 0, 0);
+  luzPrincipal.castShadow = false;
+  group.add(luzPrincipal);
+  group.add(luzPrincipal.target);
+  
+  // Luz ambiental suave para resaltar detalles
+  const luzAmbiental = new THREE.PointLight(0xffffff, 1.5, 8);
+  luzAmbiental.position.set(0, 2, 2);
+  group.add(luzAmbiental);
+
+  // Sin placa - arte urbano puro
+
+  group.position.set(x, 0, z);
+  group.rotation.y = rotationY;
+  group.castShadow = group.receiveShadow = true;
+  scene.add(group);
+  
+  return { group, clementeModelRef: modelRef, luzObjeto: luzPrincipal };
+}
+
+export function createMesa(scene, x = 0, z = 0, rotationY = 0){
+  const group = new THREE.Group();
+  const mesaRef = { current: null };
+  
+  // Cargar modelo de mesa
+  const mesaLoader = new GLTFLoader();
+  mesaLoader.load('/assets/models/table/scene.gltf', (gltf) => {
+    const mesaModel = gltf.scene;
+    
+    // Calcular tamaño y escalar para que sea una mesa realista
+    const box = new THREE.Box3().setFromObject(mesaModel);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const targetSize = 1.5; // Tamaño de mesa normal (aprox 1.5 metros)
+    const scale = targetSize / maxDim;
+    
+    mesaModel.scale.setScalar(scale);
+    mesaModel.position.set(0, 0, 0); // Directamente en el suelo
+    mesaModel.rotation.set(0, 0, 0);
+    
+    // Configurar materiales y sombras
+    mesaModel.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        if (node.material) {
+          if (node.material.map) {
+            try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+          }
+          if (node.material.normalMap) {
+            try { node.material.normalMap.colorSpace = THREE.LinearSRGBColorSpace; } catch(e) {}
+          }
+        }
+      }
+    });
+    
+    group.add(mesaModel);
+    mesaRef.current = mesaModel;
+    console.log('✅ Mesa cargada');
+  }, undefined, (error) => {
+    console.error('❌ Error cargando modelo de mesa GLTF:', error);
+  });
+  
+  group.position.set(x, 0, z);
+  group.rotation.y = rotationY;
+  group.castShadow = group.receiveShadow = true;
+  scene.add(group);
+  
+  return { group, mesaModelRef: mesaRef };
+}
+
+export function createCoronadosDeGloria(scene, x = 0, z = 0, rotationY = 0){
+  const group = new THREE.Group();
+  const coronadosRef = { current: null };
+  
+  // Cargar modelo de coronados_de_gloria_argentina
+  const coronadosLoader = new GLTFLoader();
+  coronadosLoader.load('/assets/models/coronados_de_gloria_argentina/scene.gltf', (gltf) => {
+    const coronadosModel = gltf.scene;
+    
+    // ⭐ AQUÍ PUEDES CAMBIAR EL TAMAÑO DEL MODELO ⭐
+    // Aumenta o disminuye el valor de targetSize para cambiar el tamaño
+    const box = new THREE.Box3().setFromObject(coronadosModel);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const targetSize = 1.0; // ⭐ CAMBIA ESTE VALOR: más grande = más grande el modelo
+    const scale = targetSize / maxDim;
+    
+    coronadosModel.scale.setScalar(scale);
+    coronadosModel.position.set(0, 1, 2.46); // ⭐ Centrado y apoyado sobre la mesa
+    coronadosModel.rotation.set(0, Math.PI + Math.PI/2, 0); // ⭐ Rotado 180° para que la portada quede de frente
+    
+    // Configurar materiales y sombras
+    coronadosModel.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+        if (node.material) {
+          if (node.material.map) {
+            try { node.material.map.colorSpace = THREE.SRGBColorSpace; } catch(e) {}
+          }
+          if (node.material.normalMap) {
+            try { node.material.normalMap.colorSpace = THREE.LinearSRGBColorSpace; } catch(e) {}
+          }
+        }
+      }
+    });
+    
+    group.add(coronadosModel);
+    coronadosRef.current = coronadosModel;
+    console.log('✅ Coronados de Gloria cargado');
+  }, undefined, (error) => {
+    console.error('❌ Error cargando modelo coronados_de_gloria_argentina GLTF:', error);
+  });
+  
+  // Iluminación (spotlight para destacar el modelo)
+  const luzPrincipal = new THREE.SpotLight(0xffffff, 3.0, 12, Math.PI / 6, 0.4, 1);
+  luzPrincipal.position.set(0, 5, 0);
+  luzPrincipal.target.position.set(0, 0, 0);
+  luzPrincipal.castShadow = false;
+  group.add(luzPrincipal);
+  group.add(luzPrincipal.target);
+  
+  // Luz de relleno
+  const luzRelleno = new THREE.PointLight(0xffffff, 1.0, 8);
+  luzRelleno.position.set(0, 2, 0);
+  group.add(luzRelleno);
+  
+  group.position.set(x, 0, z);
+  group.rotation.y = rotationY;
+  group.castShadow = group.receiveShadow = true;
+  scene.add(group);
+  
+  return { group, coronadosModelRef: coronadosRef, luzObjeto: luzPrincipal };
+}
